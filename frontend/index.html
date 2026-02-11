@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,19 +8,24 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Nanum+Gothic:wght@400;700&display=swap"
+        rel="stylesheet">
     <!-- Custom Styles -->
     <link rel="stylesheet" href="./styles/style.css">
 </head>
+
 <body class="min-h-screen flex items-center justify-center p-4 overflow-hidden">
     <!-- Background Decor -->
     <div class="fixed top-[-10%] left-[-10%] w-[400px] h-[400px] bg-pink-500/20 rounded-full blur-[100px] -z-10"></div>
-    <div class="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] -z-10"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] -z-10">
+    </div>
 
-    <main class="glass cute-shadow w-full max-w-md rounded-[40px] p-8 text-center relative overflow-hidden">
+    <main class="glass w-full max-w-md rounded-[40px] p-8 text-center relative overflow-hidden animate-float">
         <!-- Header -->
         <div class="flex flex-col items-center gap-2 mb-8">
-            <div class="bg-pink-500/10 text-pink-400 px-4 py-1 rounded-full text-sm font-bold border border-pink-500/20 inline-block animate-bounce-subtle" id="status-badge">
+            <div class="bg-pink-500/10 text-pink-400 px-4 py-1 rounded-full text-sm font-bold border border-pink-500/20 inline-block animate-bounce-subtle"
+                id="status-badge">
                 FOCUS TIME 🎯
             </div>
             <h1 class="text-2xl font-bold tracking-tight text-pink-100">코다리 뽀모도로 Premium</h1>
@@ -42,37 +48,51 @@
         <!-- Controls -->
         <div class="flex flex-col gap-4">
             <div class="flex gap-3 justify-center">
-                <button id="start-btn" class="flex-1 bg-pink-500 hover:bg-pink-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <button id="start-btn"
+                    class="flex-1 bg-pink-500 hover:bg-pink-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2 shadow-lg shadow-pink-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                     </svg>
                     START
                 </button>
-                <button id="pause-btn" class="hidden flex-1 bg-amber-500 hover:bg-amber-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button id="pause-btn"
+                    class="hidden flex-1 bg-amber-500 hover:bg-amber-400 active:scale-95 transition-all text-white font-bold py-4 rounded-2xl text-lg flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6" />
                     </svg>
                     PAUSE
                 </button>
-                <button id="reset-btn" class="w-16 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all text-white rounded-2xl flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <button id="reset-btn"
+                    class="w-16 bg-slate-700 hover:bg-slate-600 active:scale-95 transition-all text-white rounded-2xl flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                 </button>
             </div>
 
             <!-- Mode Switch -->
             <div class="flex bg-slate-800/50 p-1 rounded-xl gap-1">
-                <button id="focus-tab" class="flex-1 py-2 text-sm font-bold rounded-lg bg-pink-500/20 text-pink-200 transition-all">Focus (25m)</button>
-                <button id="break-tab" class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-400 hover:text-white transition-all">Break (5m)</button>
+                <button id="focus-tab"
+                    class="flex-1 py-2 text-sm font-bold rounded-lg bg-pink-500/20 text-pink-200 transition-all">Focus
+                    (25m)</button>
+                <button id="break-tab"
+                    class="flex-1 py-2 text-sm font-bold rounded-lg text-slate-400 hover:text-white transition-all">Break
+                    (5m)</button>
             </div>
         </div>
 
         <!-- Weekly Chart -->
         <div class="mt-10 text-left">
             <h2 class="text-sm font-bold text-slate-400 mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 WEEKLY FOCUS
             </h2>
@@ -84,7 +104,8 @@
         <!-- Footer Message -->
         <div class="mt-8 pt-6 border-t border-white/5 flex items-center gap-3 text-left">
             <div class="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
-                <img src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png" alt="Kodari" class="w-full h-full object-cover">
+                <img src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png"
+                    alt="Kodari" class="w-full h-full object-cover">
             </div>
             <p class="text-xs text-slate-400 line-clamp-2" id="kodari-msg">
                 "대표님, 오늘도 수익화를 위해 화이팅입니다!"
@@ -95,4 +116,5 @@
     <!-- Main Entry Point -->
     <script type="module" src="./src/app.js"></script>
 </body>
+
 </html>
