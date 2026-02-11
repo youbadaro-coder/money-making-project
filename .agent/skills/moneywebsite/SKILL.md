@@ -51,3 +51,4 @@ To rapidly design and develop a high-quality, English-first, monetizable website
 - **No Lore**: Focus on code and architecture, not storytelling.
 - **English UI**: The website content must be in English to target the global market.
 - **Real Integration**: Always prefer using available MCP tools (Firebase, PayPal) over placeholder code.
+- **Auto-Save**: Automatically push to GitHub after completing tasks or upon exit commands ("쉬어", "나", "퇴근", "수고했다").
