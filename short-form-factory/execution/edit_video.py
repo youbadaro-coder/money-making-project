@@ -6,7 +6,7 @@ import textwrap
 import numpy as np
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
-from moviepy import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, CompositeAudioClip
+from moviepy import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, CompositeAudioClip, AudioClip, concatenate_audioclips
 
 # Korean font path
 FONT_PATH = "C:/Windows/Fonts/malgunbd.ttf" # Use bold if available
@@ -30,44 +30,55 @@ async def generate_narration(text, voice, output_path):
         print(f"Error generating narration: {e}", flush=True)
         return False
 
-def create_text_image(text, width=1080, height=1920, fontsize=70, color='yellow', stroke_color='black', stroke_width=5):
+def create_text_image(text, width=1080, height=1920, fontsize=50, color='black'):
     """
-    Creates a transparent PIL Image with wrapped and centered text.
-    Yellow text with black outline is standard for engaging shorts.
+    Creates a transparent PIL Image with wrapped and centered text on a gray background.
     """
     try:
         font = ImageFont.truetype(FONT_PATH, fontsize)
     except:
         font = ImageFont.load_default()
 
-    # Wrap text to fit roughly 80% of width
-    wrapper = textwrap.TextWrapper(width=15) # Approx characters per line for 1080px
-    lines = wrapper.wrap(text)
+    # Wrap text to max 2 lines (approx 25 chars for 1080px at 50px font)
+    wrapper = textwrap.TextWrapper(width=25) 
+    lines = wrapper.wrap(text)[:2] # Ensure max 2 lines
     
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Calculate total height of the text block
-    line_spacing = 15
+    # Calculate metrics
+    line_spacing = 10
     ascent, descent = font.getmetrics()
     line_h = ascent + descent + line_spacing
     total_h = len(lines) * line_h
 
-    # USER REQUEST: Bottom Center (Around 80% down)
-    current_y = int(height * 0.8) - (total_h // 2)
-
+    # Calculate widths for the background box
+    max_line_w = 0
+    line_widths = []
     for line in lines:
         left, top, right, bottom = font.getbbox(line)
-        line_w = right - left
+        w = right - left
+        line_widths.append(w)
+        if w > max_line_w:
+            max_line_w = w
+
+    # USER REQUEST: Position lower (around 85% down)
+    padding_x = 30
+    padding_y = 15
+    box_x1 = (width - max_line_w) // 2 - padding_x
+    box_y1 = int(height * 0.85) - padding_y
+    box_x2 = (width + max_line_w) // 2 + padding_x
+    box_y2 = box_y1 + total_h + padding_y * 1.5
+    
+    # Draw semi-transparent gray background box (lighter and more transparent)
+    draw.rounded_rectangle([box_x1, box_y1, box_x2, box_y2], radius=10, fill=(220, 220, 220, 80))
+
+    # Draw text
+    current_y = box_y1 + padding_y
+    for i, line in enumerate(lines):
+        line_w = line_widths[i]
         current_x = (width - line_w) // 2
-        
-        # Draw shadow for extreme readability
-        shadow_offset = 4
-        draw.text((current_x + shadow_offset, current_y + shadow_offset), line, font=font, fill='black')
-        
-        # Draw main text with outline
-        draw.text((current_x, current_y), line, font=font, fill=color, 
-                  stroke_width=stroke_width, stroke_fill=stroke_color)
+        draw.text((current_x, current_y), line, font=font, fill=color)
         current_y += line_h
 
     return np.array(img)
@@ -107,9 +118,10 @@ async def process_segments(segments, voice_profile):
                     video_clip = video_clip.cropped(x1=0, y1=video_clip.h/2 - 960, width=1080, height=1920)
                 
                 # Loop or trim video to match audio duration
-                # ADDED: Padding to prevent audio being cut off at the end of segments
-                padding_duration = 0.3
-                audio_clip = audio_clip.with_duration(audio_clip.duration + padding_duration)
+                # FIXED: Actual padding to prevent audio being cut off and OSError duration mismatch
+                padding_duration = 0.5
+                silence = AudioClip(frame_function=lambda t: [0, 0], duration=padding_duration, fps=44100)
+                audio_clip = concatenate_audioclips([audio_clip, silence])
                 duration = audio_clip.duration
 
                 if video_clip.duration < duration:
