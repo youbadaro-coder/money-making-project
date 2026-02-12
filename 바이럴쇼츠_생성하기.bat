@@ -1,3 +1,3 @@
 @echo off
-cd /d "%~dp0\short-form-factory"
-start Run_Shorts_Generator.bat
+cd /d "c:\ai작업\anti\수익화에이전트첫걸음\short-form-factory"
+call "c:\ai작업\anti\수익화에이전트첫걸음\short-form-factory\ShortsFactory_Launch.bat"
