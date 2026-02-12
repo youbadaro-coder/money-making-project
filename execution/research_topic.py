@@ -28,12 +28,13 @@ def research_topic(category=None, user_topic=None):
     Selects a category and uses Gemini to generate a video topic and script.
     """
     selected_category = category if category else random.choice(CATEGORIES)
-    print(f"Selected Category: {selected_category}")
+    print(f"Selected Category: {selected_category}", flush=True)
     
     if user_topic:
-        print(f"User Specified Topic: {user_topic}")
+        print(f"User Specified Topic: {user_topic}", flush=True)
 
-    model = genai.GenerativeModel('gemini-3-flash-preview')
+    print("Gemini API 호출 중 (gemini-2.0-flash)...", flush=True)
+    model = genai.GenerativeModel('gemini-2.0-flash')
     
     topic_context = f"Topic hint: {user_topic}" if user_topic else "Auto-generate a creative topic."
     
@@ -65,6 +66,7 @@ def research_topic(category=None, user_topic=None):
 
     try:
         response = model.generate_content(prompt)
+        print("API 응답 수신 완료.", flush=True)
         # Clean up code blocks if Gemini returns them
         text_response = response.text.replace('```json', '').replace('```', '').strip()
         data = json.loads(text_response)
@@ -79,7 +81,7 @@ def research_topic(category=None, user_topic=None):
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             
-        print(f"Successfully generated topic data: {output_path}")
+        print(f"Successfully generated topic data: {output_path}", flush=True)
         return data
 
     except Exception as e:

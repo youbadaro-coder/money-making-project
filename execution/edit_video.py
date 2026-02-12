@@ -27,7 +27,7 @@ async def generate_narration(text, voice, output_path):
         await communicate.save(output_path)
         return True
     except Exception as e:
-        print(f"Error generating narration: {e}")
+        print(f"Error generating narration: {e}", flush=True)
         return False
 
 def create_text_image(text, width=1080, height=1920, fontsize=70, color='yellow', stroke_color='black', stroke_width=5):
@@ -77,7 +77,7 @@ async def process_segments(segments, voice_profile):
         video_path = os.path.join(VIDEO_OUT_DIR, f"segment_{i}.mp4")
         audio_path = os.path.join(AUDIO_OUT_DIR, f"segment_{i}.mp3")
         
-        print(f"Processing segment {i}: {text[:20]}...")
+        print(f"Processing segment {i}: {text[:20]}...", flush=True)
         
         # 1. Generate Narration
         if not await generate_narration(text, voice_profile, audio_path):
@@ -145,13 +145,13 @@ async def edit_video():
         print("No segments found in data.")
         return
 
-    print("--- Starting Superior Rendering Engine ---")
+    print("--- Starting Superior Rendering Engine ---", flush=True)
     
     # Process Segments
     segment_clips = await process_segments(segments, voice_profile)
     
     if not segment_clips:
-        print("No clips were successfully processed.")
+        print("No clips were successfully processed.", flush=True)
         return
 
     # Concatenate all segments
@@ -170,9 +170,9 @@ async def edit_video():
             # Mix with narration (which is already in final_video.audio)
             final_audio = CompositeAudioClip([final_video.audio, bgm_clip])
             final_video = final_video.with_audio(final_audio)
-            print("Successfully mixed background music.")
+            print("Successfully mixed background music.", flush=True)
         except Exception as e:
-            print(f"Error adding BGM: {e}")
+            print(f"Error adding BGM: {e}", flush=True)
     
     # Limit to 59 seconds for Shorts
     if final_video.duration > 59:
@@ -181,9 +181,9 @@ async def edit_video():
     # Output path
     output_path = os.path.join(TEMP_DIR, 'final_video.mp4')
     
-    print(f"Exporting final video: {output_path}")
+    print(f"Exporting final video: {output_path}", flush=True)
     final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
-    print("--- Video Production Complete! ---")
+    print("--- Video Production Complete! ---", flush=True)
 
 if __name__ == "__main__":
     asyncio.run(edit_video())

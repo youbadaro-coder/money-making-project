@@ -73,9 +73,9 @@
             <div>
                 <h1
                     class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-indigo-400">
-                    Shorts Factory Studio
+                    쇼츠 팩토리 스튜디오
                 </h1>
-                <p class="text-slate-400 mt-2">부장님 전용 고화질 숏폼 생성 제어판</p>
+                <p class="text-slate-400 mt-2">의장님 전용 고화질 숏폼 생성 제어판</p>
             </div>
             <div class="glass px-6 py-3 rounded-2xl flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full overflow-hidden border border-pink-500">
@@ -90,35 +90,35 @@
         <div class="lg:col-span-4 space-y-6">
             <section class="glass p-8 rounded-[32px]">
                 <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                    <span class="text-teal-500">01</span> Annie's Script Tone
+                    <span class="text-teal-500">01</span> 애니의 대본 톤 (Annie)
                 </h2>
                 <div class="grid grid-cols-2 gap-3 mb-8" id="tone-picker">
                     <button class="glass p-3 rounded-xl border-teal-500 bg-teal-500/20 text-white font-medium"
-                        onclick="selectTone(this, 'Emotional')">Emotional</button>
+                        onclick="selectTone(this, 'Emotional')">감성적 (Emotional)</button>
                     <button class="glass p-3 rounded-xl border-transparent"
-                        onclick="selectTone(this, 'Psychological')">Psychological</button>
+                        onclick="selectTone(this, 'Psychological')">심리 분석 (Psychological)</button>
+                    <button class="glass p-3 rounded-xl border-transparent" onclick="selectTone(this, 'Bold')">대담한
+                        (Bold)</button>
                     <button class="glass p-3 rounded-xl border-transparent"
-                        onclick="selectTone(this, 'Bold')">Bold</button>
-                    <button class="glass p-3 rounded-xl border-transparent"
-                        onclick="selectTone(this, 'Whispering')">Whispering</button>
+                        onclick="selectTone(this, 'Whispering')">속삭이는 (Whispering)</button>
                 </div>
 
                 <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                    <span class="text-red-500">02</span> Shhyong's Visual Style
+                    <span class="text-red-500">02</span> 쑝팀장의 비주얼 스타일
                 </h2>
                 <div class="grid grid-cols-2 gap-3 mb-8" id="style-picker">
                     <button class="glass p-3 rounded-xl border-red-500 bg-red-500/20 text-white font-medium"
-                        onclick="selectStyle(this, 'Cinematic')">Cinematic</button>
+                        onclick="selectStyle(this, 'Cinematic')">시네마틱 (Cinematic)</button>
                     <button class="glass p-3 rounded-xl border-transparent"
-                        onclick="selectStyle(this, 'Cyberpunk')">Cyberpunk</button>
+                        onclick="selectStyle(this, 'Cyberpunk')">사이버펑크 (Cyberpunk)</button>
                     <button class="glass p-3 rounded-xl border-transparent"
-                        onclick="selectStyle(this, 'UHD Realism')">UHD Realism</button>
-                    <button class="glass p-3 rounded-xl border-transparent" onclick="selectStyle(this, 'Anime')">Anime
-                        Style</button>
+                        onclick="selectStyle(this, 'UHD Realism')">초고화질 극사실 (UHD)</button>
+                    <button class="glass p-3 rounded-xl border-transparent" onclick="selectStyle(this, 'Anime')">애니메이션
+                        스타일</button>
                 </div>
 
                 <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-                    <span class="text-pink-500">03</span> Custom Topic
+                    <span class="text-pink-500">03</span> 커스텀 주제 입력
                 </h2>
                 <input type="text" id="topic-input" placeholder="직접 주제 입력 (예: 고양이의 하루)"
                     class="w-full bg-slate-800/50 rounded-2xl px-5 py-4 border border-white/5 focus:outline-none focus:border-pink-500 transition-all mb-8">
@@ -135,8 +135,8 @@
             <!-- Video Preview -->
             <section class="glass p-6 rounded-[32px] min-h-[400px] flex flex-col">
                 <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
-                    <span>🎬 Output Preview</span>
-                    <span id="status-indicator" class="text-sm font-normal text-slate-500">Waiting for command...</span>
+                    <span>🎬 결과물 미리보기 (Preview)</span>
+                    <span id="status-indicator" class="text-sm font-normal text-slate-500">대기 중...</span>
                 </h2>
                 <div
                     class="flex-1 bg-black/40 rounded-2xl overflow-hidden relative flex items-center justify-center border border-white/5">
@@ -154,10 +154,10 @@
 
             <!-- Real-time Console -->
             <section class="glass p-6 rounded-[32px]">
-                <h2 class="text-sm font-bold text-pink-500 mb-4 uppercase tracking-widest">System Console Log</h2>
+                <h2 class="text-sm font-bold text-pink-500 mb-4 uppercase tracking-widest">실시간 시스템 로그 (Console Log)</h2>
                 <div id="log-container"
                     class="h-48 overflow-y-auto bg-black/60 rounded-xl p-4 font-mono text-xs leading-relaxed text-emerald-400 space-y-1">
-                    <div class="text-slate-500">System initialized. Ready for user input.</div>
+                    <div class="text-slate-500">시스템이 준비되었습니다. 명령을 입력하세요.</div>
                 </div>
             </section>
         </div>

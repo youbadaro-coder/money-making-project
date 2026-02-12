@@ -13,10 +13,10 @@ LOCAL_VIDEO_DIR = r"d:\안티작업\0211"
 
 def fetch_from_pexels(keywords):
     if not PEXELS_API_KEY:
-        print("PEXELS_API_KEY not found in .env. Skipping Pexels search.")
+        print("PEXELS_API_KEY not found in .env. Skipping Pexels search.", flush=True)
         return []
 
-    print(f"Searching Pexels for: {keywords}")
+    print(f"Searching Pexels for: {keywords}", flush=True)
     headers = {"Authorization": PEXELS_API_KEY}
     
     # Use the first 2-3 keywords for a broader search

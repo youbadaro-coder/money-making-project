@@ -60,7 +60,7 @@ def generate():
         yield f"data: 🚀 {persona.upper()}: 대표님, 요청하신 주제로 창작을 시작합니다!\n\n"
         
         # Step 1: Research
-        yield f"data: 📝 {persona.upper()}: 부장님 스타일의 감각적인 기획안을 작성 중입니다...\n\n"
+        yield f"data: 📝 {persona.upper()}: 의장님 스타일의 감각적인 기획안을 작성 중입니다...\n\n"
         yield from run_script_yield(os.path.join(BASE_DIR, "execution", "research_topic.py"), [category, enhanced_topic])
         
         # Step 2: Fetch Materials

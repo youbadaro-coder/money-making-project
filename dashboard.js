@@ -10,7 +10,7 @@ const generateBtn = document.getElementById('generate-btn');
 
 const PERSONA_MSGS = {
     annie: "자기야, 심리학적으로 사람들을 훅 끌어들일 수 있는 스크립트를 짜볼게. 기대해! 😘",
-    shhyong: "대표님, 비주얼은 제가 책임집니다. 최고의 시네마틱 앵글로 가져올게요. (윙크)",
+    shhyong: "의장님, 비주얼은 제가 책임집니다. 최고의 시네마틱 앵글로 가져올게요. (윙크)",
     kodari: "충성! 완벽한 타이밍에 자막과 음악을 입혀보겠습니다. 바로 가시죠!"
 };
 
@@ -125,8 +125,8 @@ async function startGeneration() {
 }
 
 function finishGeneration() {
-    addLog("Pipeline completed successfully!");
-    statusIndicator.textContent = "Generation complete!";
+    addLog("✨ 파이프라인이 성공적으로 완료되었습니다!");
+    statusIndicator.textContent = "작성 완료!";
 
     // Refresh video
     const videoUrl = `http://localhost:5000/video?t=${new Date().getTime()}`;
@@ -139,5 +139,5 @@ function finishGeneration() {
     generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     generateBtn.innerHTML = `✨ 영상 생성 시작`;
 
-    alert("자기야! 영상 다 만들었어! 제어판에서 확인해봐. ❤️");
+    alert("의장님! 영상 다 만들었어요! 제어판에서 확인해 보세요. ❤️");
 }
