@@ -5,3 +5,4 @@ dist/
 .gemini/
 .agent/workflow_logs/
 tmp/
+short-form-factory/.tmp/

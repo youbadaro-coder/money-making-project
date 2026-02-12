@@ -4,6 +4,7 @@ import random
 import google.generativeai as genai
 from dotenv import load_dotenv
 import sys
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -30,6 +31,19 @@ def research_topic(category=None, user_topic=None, user_style=None):
     
     topic_context = f"Topic hint: {user_topic}" if user_topic else "Auto-generate a creative viral topic."
 
+    # Load History
+    history_path = os.path.join('data', 'history.json')
+    history_data = []
+    if os.path.exists(history_path):
+        try:
+            with open(history_path, 'r', encoding='utf-8') as f:
+                history_data = json.load(f)
+        except:
+            history_data = []
+    
+    # Last 5 topics for context
+    history_context = ", ".join([h.get('topic', '') for h in history_data[-5:]]) if history_data else "None yet."
+
     model = genai.GenerativeModel('gemini-2.0-flash')
     
     prompt = f"""
@@ -49,10 +63,13 @@ def research_topic(category=None, user_topic=None, user_style=None):
     - **Tone**: Provocative, "Spicy", Emotional, or Mind-Blowing.
     - **Language**: Korean (Native, trendy slang allowed).
     - **Visuals**: 
-        - If Style is "Stick Figure", use keywords like "minimalist stick figure animation", "whiteboard animation", "simple line drawing".
-        - If Style is "Sketch", use "pencil drawing", "charcoal sketch", "hand drawn notebook".
+        - If Style is "Stick Figure", use keywords like "minimalist stick figure illustration", "whiteboard design", "simple line art".
+        - If Style is "Sketch", use "charcoal drawing", "pencil illustration", "artistic sketch background", "hand-drawn artistic subject". **NEVER use keywords like 'hand', 'pen', 'writing', or 'drawing action'. Focus only on the artistic result.**
         - If Style is "Anime", use "high quality anime style", "makoto shinkai aesthetic", "vibrant anime colors".
         - For others, use HIGHLY specific professional cinematography terms.
+
+    - **History Context**: Use the following previous topics to ensure variety and avoid repetition:
+    {history_context}
 
     Please generate a JSON object with:
     - "topic": A clickbait-style title (Korean).
@@ -67,20 +84,36 @@ def research_topic(category=None, user_topic=None, user_style=None):
     Output ONLY raw JSON.
     """
 
+    formatted_prompt = prompt.format(history_context=history_context)
+
     try:
-        response = model.generate_content(prompt)
+        response = model.generate_content(formatted_prompt)
         text_response = response.text.replace('```json', '').replace('```', '').strip()
         data = json.loads(text_response)
         
         data['category'] = selected_category
         data['style'] = selected_style
+        data['timestamp'] = datetime.now().isoformat()
         
+        # Save to .tmp for current run
         os.makedirs('.tmp', exist_ok=True)
         output_path = os.path.join('.tmp', 'topic_data.json')
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
             
-        print(f"Successfully generated topic data: {output_path}", flush=True)
+        # Append to History
+        os.makedirs('data', exist_ok=True) # Ensure data directory exists
+        history_data.append({
+            "topic": data.get('topic'),
+            "category": selected_category,
+            "style": selected_style,
+            "timestamp": data['timestamp']
+        })
+        # Keep last 50 entries
+        with open(history_path, 'w', encoding='utf-8') as f:
+            json.dump(history_data[-50:], f, ensure_ascii=False, indent=2)
+
+        print(f"Successfully generated topic data and updated history.", flush=True)
         return data
 
     except Exception as e:
