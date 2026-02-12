@@ -1,0 +1,6 @@
+google-generativeai
+python-dotenv
+requests
+moviepy
+google-auth-oauthlib
+google-api-python-client

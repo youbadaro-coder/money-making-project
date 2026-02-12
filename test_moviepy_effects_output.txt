@@ -1,0 +1,6 @@
+Testing MoviePy effects...
+clip.resize missing
+clip.resized exists
+clip.crop missing
+clip.cropped exists
+Test complete.

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorts Factory Dashboard | 부장님 제어판</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --bg-dark: #0f172a;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .animate-glow {
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+            }
+
+            to {
+                box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+            }
+        }
+
+        #log-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #log-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-6 md:p-12">
+    <!-- Background Decor -->
+    <div class="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[120px] -z-10"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] -z-10">
+    </div>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Header -->
+        <header class="lg:col-span-12 flex items-center justify-between mb-4">
+            <div>
+                <h1
+                    class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-indigo-400">
+                    Shorts Factory Studio
+                </h1>
+                <p class="text-slate-400 mt-2">부장님 전용 고화질 숏폼 생성 제어판</p>
+            </div>
+            <div class="glass px-6 py-3 rounded-2xl flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full overflow-hidden border border-pink-500">
+                    <img src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png"
+                        alt="Kodari">
+                </div>
+                <span class="font-semibold text-pink-400">KODARI CHIEF</span>
+            </div>
+        </header>
+
+        <!-- Sidebar / Configuration -->
+        <div class="lg:col-span-4 space-y-6">
+            <section class="glass p-8 rounded-[32px]">
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                    <span class="text-teal-500">01</span> Annie's Script Tone
+                </h2>
+                <div class="grid grid-cols-2 gap-3 mb-8" id="tone-picker">
+                    <button class="glass p-3 rounded-xl border-teal-500 bg-teal-500/20 text-white font-medium"
+                        onclick="selectTone(this, 'Emotional')">Emotional</button>
+                    <button class="glass p-3 rounded-xl border-transparent"
+                        onclick="selectTone(this, 'Psychological')">Psychological</button>
+                    <button class="glass p-3 rounded-xl border-transparent"
+                        onclick="selectTone(this, 'Bold')">Bold</button>
+                    <button class="glass p-3 rounded-xl border-transparent"
+                        onclick="selectTone(this, 'Whispering')">Whispering</button>
+                </div>
+
+                <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                    <span class="text-red-500">02</span> Shhyong's Visual Style
+                </h2>
+                <div class="grid grid-cols-2 gap-3 mb-8" id="style-picker">
+                    <button class="glass p-3 rounded-xl border-red-500 bg-red-500/20 text-white font-medium"
+                        onclick="selectStyle(this, 'Cinematic')">Cinematic</button>
+                    <button class="glass p-3 rounded-xl border-transparent"
+                        onclick="selectStyle(this, 'Cyberpunk')">Cyberpunk</button>
+                    <button class="glass p-3 rounded-xl border-transparent"
+                        onclick="selectStyle(this, 'UHD Realism')">UHD Realism</button>
+                    <button class="glass p-3 rounded-xl border-transparent" onclick="selectStyle(this, 'Anime')">Anime
+                        Style</button>
+                </div>
+
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <span class="text-pink-500">03</span> Custom Topic
+                </h2>
+                <input type="text" id="topic-input" placeholder="직접 주제 입력 (예: 고양이의 하루)"
+                    class="w-full bg-slate-800/50 rounded-2xl px-5 py-4 border border-white/5 focus:outline-none focus:border-pink-500 transition-all mb-8">
+
+                <button id="generate-btn" onclick="startGeneration()"
+                    class="w-full bg-gradient-to-r from-pink-500 to-indigo-600 p-5 rounded-2xl font-bold text-lg hover:animate-glow transition-all active:scale-95 flex items-center justify-center gap-3">
+                    ✨ 영상 생성 시작
+                </button>
+            </section>
+        </div>
+
+        <!-- Main Content / Result -->
+        <div class="lg:col-span-8 space-y-6">
+            <!-- Video Preview -->
+            <section class="glass p-6 rounded-[32px] min-h-[400px] flex flex-col">
+                <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
+                    <span>🎬 Output Preview</span>
+                    <span id="status-indicator" class="text-sm font-normal text-slate-500">Waiting for command...</span>
+                </h2>
+                <div
+                    class="flex-1 bg-black/40 rounded-2xl overflow-hidden relative flex items-center justify-center border border-white/5">
+                    <video id="output-video" class="hidden max-h-[500px]" controls></video>
+                    <div id="video-placeholder" class="text-center text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto mb-4 opacity-20" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        생성된 영상이 이곳에 표시됩니다.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-time Console -->
+            <section class="glass p-6 rounded-[32px]">
+                <h2 class="text-sm font-bold text-pink-500 mb-4 uppercase tracking-widest">System Console Log</h2>
+                <div id="log-container"
+                    class="h-48 overflow-y-auto bg-black/60 rounded-xl p-4 font-mono text-xs leading-relaxed text-emerald-400 space-y-1">
+                    <div class="text-slate-500">System initialized. Ready for user input.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

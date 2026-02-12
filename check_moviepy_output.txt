@@ -1,0 +1,4 @@
+MoviePy Version: 2.1.2
+['AudioArrayClip', 'AudioClip', 'AudioFileClip', 'BitmapClip', 'Clip', 'ColorClip', 'CompositeAudioClip', 'CompositeVideoClip', 'DataVideoClip', 'Effect', 'ImageClip', 'ImageSequenceClip', 'TextClip', 'UpdatedVideoClip', 'VideoClip', 'VideoFileClip', '__all__', '__builtins__', '__cached__', '__doc__', '__file__', '__loader__', '__name__', '__package__', '__path__', '__spec__', '__version__', 'afx', 'audio', 'clips_array', 'concatenate_audioclips', 'concatenate_videoclips', 'config', 'convert_to_seconds', 'decorators', 'display_in_notebook', 'ffmpeg_tools', 'tools', 'version', 'vfx', 'video', 'videotools']
+Imported VideoFileClip from top level
+Failed to import VideoFileClip from editor

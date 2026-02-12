@@ -1,0 +1,19 @@
+.tmp/
+.bin/
+.env
+*.mp4
+*.mp3
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+node_modules/
+.agent/
+.gemini/
+build/
+dist/
+*.jpeg
+*.jpg
+*.png
+# Keep scripts but ignore raw assets in 0211 if they are too large
+# 0211/

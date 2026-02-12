@@ -1,0 +1,4 @@
+Start env test
+Key found: True
+Key length: 39
+End env test

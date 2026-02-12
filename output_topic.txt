@@ -1,0 +1,14 @@
+D:\안티작업\execution\research_topic.py:4: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+Environment loaded.
+GEMINI_API_KEY length: 39
+GenAI configured.
+Selected Category: Touching
+Successfully generated topic data: .tmp\topic_data.json
