@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorts Factory Studio | 의장님 전용 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --bg-dark: #0f172a;
+            --glass: rgba(30, 41, 59, 0.7);
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .animate-glow {
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+            }
+
+            to {
+                box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+            }
+        }
+
+        #log-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #log-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .persona-active {
+            border: 2px solid var(--primary);
+            transform: scale(1.1);
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 md:p-8">
+    <!-- Background Decor -->
+    <div class="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-pink-500/10 rounded-full blur-[120px] -z-10"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] -z-10">
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <div
+                    class="w-12 h-12 bg-gradient-to-br from-pink-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <h1
+                        class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-indigo-400">
+                        SHORTS FACTORY STUDIO
+                    </h1>
+                    <p class="text-slate-400 text-sm">의장님 전용 프리미엄 AI 영상 제작소</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center gap-6">
+                <div class="text-right">
+                    <p class="text-xs text-slate-500 uppercase tracking-widest font-bold">Current Operator</p>
+                    <p id="active-persona-name" class="text-pink-400 font-bold">KODARI MANAGER</p>
+                </div>
+                <div class="w-12 h-12 rounded-full border-2 border-pink-500 p-0.5 overflow-hidden">
+                    <img id="active-persona-img"
+                        src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png"
+                        alt="Operator" class="w-full h-full object-cover rounded-full">
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Sidebar / Control Panel -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- Persona Selector -->
+                <div class="glass p-6 rounded-[32px] space-y-4">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <span class="w-6 h-6 flex items-center justify-center bg-pink-500 rounded-lg text-xs">P</span>
+                        실시간 담당자 변경
+                    </h2>
+                    <div class="flex justify-between gap-4">
+                        <button onclick="switchPersona('annie')" id="btn-annie"
+                            class="group flex flex-col items-center gap-2 transition-all">
+                            <div
+                                class="w-14 h-14 rounded-full border-2 border-transparent overflow-hidden opacity-50 hover:opacity-100 transition-all">
+                                <img src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/annie_profile.png"
+                                    alt="Annie" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-400">ANNIE</span>
+                        </button>
+                        <button onclick="switchPersona('shhyong')" id="btn-shhyong"
+                            class="group flex flex-col items-center gap-2 transition-all">
+                            <div
+                                class="w-14 h-14 rounded-full border-2 border-transparent overflow-hidden opacity-50 hover:opacity-100 transition-all">
+                                <img src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/song_profile.png"
+                                    alt="Song" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-400">SONG</span>
+                        </button>
+                        <button onclick="switchPersona('kodari')" id="btn-kodari"
+                            class="group flex flex-col items-center gap-2 transition-all persona-active">
+                            <div class="w-14 h-14 rounded-full border-2 border-pink-500 overflow-hidden transition-all">
+                                <img src="https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png"
+                                    alt="Kodari" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-[10px] font-bold text-pink-400">KODARI</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Config Forms -->
+                <section class="glass p-8 rounded-[32px] space-y-6">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">01. Content Category
+                        </h2>
+                        <select id="tone-select"
+                            class="w-full bg-slate-800/80 rounded-2xl px-4 py-3 border border-white/5 focus:outline-none focus:border-pink-500 transition-all">
+                            <option value="Touching">Touching (감동적)</option>
+                            <option value="Provocative">Provocative (바이럴/자극적)</option>
+                            <option value="Knowledge">Knowledge (정보전달)</option>
+                            <option value="Funny">Funny (유머/병맛)</option>
+                            <option value="Calm">Calm (브이로그/차분)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">02. Visual Style
+                            (Song)</h2>
+                        <select id="style-select"
+                            class="w-full bg-slate-800/80 rounded-2xl px-4 py-3 border border-white/5 focus:outline-none focus:border-pink-500 transition-all">
+                            <option value="Cinematic">Cinematic 8K</option>
+                            <option value="Anime">Dynamic Anime</option>
+                            <option value="Stick Figure">Stick Figure (졸라맨)</option>
+                            <option value="Sketch">Hand-drawn Sketch</option>
+                            <option value="Minimalist">Modern Minimalist</option>
+                            <option value="UHD Realism">UHD Realism</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">03. Custom Topic
+                        </h2>
+                        <input type="text" id="topic-input" placeholder="주제를 입력하세요 (예: 고양이가 짖는 이유)"
+                            class="w-full bg-slate-800/80 rounded-2xl px-4 py-4 border border-white/5 focus:outline-none focus:border-pink-500 transition-all">
+                    </div>
+
+                    <button id="generate-btn" onclick="startGeneration()"
+                        class="w-full bg-gradient-to-r from-pink-500 to-indigo-600 p-5 rounded-2xl font-bold text-lg hover:animate-glow transition-all active:scale-95 flex items-center justify-center gap-3">
+                        <span id="btn-text">✨ 숏폼 생성 시작</span>
+                    </button>
+                </section>
+            </div>
+
+            <!-- Main Display Area -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- Video Section -->
+                <section
+                    class="glass p-6 rounded-[32px] aspect-video lg:aspect-auto min-h-[500px] flex flex-col relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 z-10">
+                        <span id="status-label"
+                            class="bg-black/50 backdrop-blur-md text-pink-400 text-xs px-3 py-1 rounded-full font-bold uppercase border border-pink-500/30">System
+                            Idle</span>
+                    </div>
+
+                    <div
+                        class="flex-1 rounded-2xl overflow-hidden bg-black/40 flex items-center justify-center border border-white/5">
+                        <video id="output-video" class="hidden h-full" controls></video>
+                        <div id="video-placeholder" class="text-center group cursor-pointer">
+                            <div
+                                class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-pink-500/10 transition-all">
+                                <svg class="w-12 h-12 text-slate-600 group-hover:text-pink-400 transition-all"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                                    </path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-slate-500 font-medium">생성된 영상이 이 곳에 프리미엄 화질로 표시됩니다</p>
+                            <p class="text-slate-600 text-sm mt-1">Ready for the Chairman's inspection</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Console Section -->
+                <section class="glass p-6 rounded-[32px]">
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <h2 class="text-xs font-bold text-pink-500 uppercase tracking-widest">REAL-TIME PRODUCTION LOG
+                        </h2>
+                        <div class="flex gap-1">
+                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                            <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                        </div>
+                    </div>
+                    <div id="log-container"
+                        class="h-44 overflow-y-auto bg-black/60 rounded-xl p-6 font-mono text-sm border border-white/5 space-y-2">
+                        <div class="text-slate-500">> System Ready. Awaiting instructions from the Chairman...</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>
