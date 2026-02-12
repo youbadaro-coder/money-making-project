@@ -82,7 +82,7 @@ async function startGeneration() {
     addLog(`Starting production: ${selectedCategory} | ${topic || 'Auto-topic'}`);
 
     try {
-        const response = await fetch('http://localhost:5000/api/generate', {
+        const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -94,6 +94,10 @@ async function startGeneration() {
             })
         });
 
+        if (!response.ok) {
+            throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
+        }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
 
@@ -101,14 +105,16 @@ async function startGeneration() {
             const { value, done } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value);
+            const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split('\n');
 
             lines.forEach(line => {
-                if (line.startsWith('data: ')) {
-                    const msg = line.replace('data: ', '');
-                    if (msg.trim()) {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('data: ')) {
+                    const msg = trimmed.replace('data: ', '');
+                    if (msg) {
                         addLog(msg);
+                        // Check for completion message from server
                         if (msg.includes('완성되었습니다')) {
                             finishGeneration();
                         }
@@ -117,7 +123,8 @@ async function startGeneration() {
             });
         }
     } catch (error) {
-        addLog(`Error: ${error.message}`, 'error');
+        console.error('Generation error:', error);
+        addLog(`❌ 오류 발생: ${error.message}`, 'error');
         generateBtn.disabled = false;
         generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         generateBtn.innerHTML = `✨ 영상 생성 시작`;

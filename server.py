@@ -16,7 +16,8 @@ def run_script_yield(script_path, args=None):
     cmd = [BIN_PYTHON, script_path]
     if args:
         cmd.extend(args)
-        
+    
+    print(f"Executing: {' '.join(cmd)}", flush=True)
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -28,10 +29,14 @@ def run_script_yield(script_path, args=None):
     )
     
     for line in iter(process.stdout.readline, ""):
-        yield f"data: {line.strip()}\n\n"
+        msg = line.strip()
+        if msg:
+            print(f"Script output: {msg}", flush=True)
+            yield f"data: {msg}\n\n"
     
     process.stdout.close()
     return_code = process.wait()
+    print(f"Process finished with code {return_code}", flush=True)
     yield f"data: [DONE] Process finished with code {return_code}\n\n"
 
 @app.route('/')
@@ -57,7 +62,8 @@ def generate():
         style = data.get('style', 'Cinematic')
         enhanced_topic = f"{topic} (Tone: {tone}, Style: {style})"
 
-        yield f"data: 🚀 {persona.upper()}: 대표님, 요청하신 주제로 창작을 시작합니다!\n\n"
+        yield "data: [SERVER] Connected\n\n"
+        yield f"data: 🚀 {persona.upper()}: 의장님, 요청하신 주제로 창작을 시작합니다!\n\n"
         
         # Step 1: Research
         yield f"data: 📝 {persona.upper()}: 의장님 스타일의 감각적인 기획안을 작성 중입니다...\n\n"
@@ -73,7 +79,11 @@ def generate():
         
         yield f"data: ✅ {persona.upper()}: 짜잔! 월드클래스 쇼츠가 완성되었습니다. 프리뷰를 확인하세요!\n\n"
 
-    return Response(stream(), mimetype='text/event-stream')
+    return Response(stream(), mimetype='text/event-stream', headers={
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no',
+        'Connection': 'keep-alive'
+    })
 
 @app.route('/video')
 def get_video():
