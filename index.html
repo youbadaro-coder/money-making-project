@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 숏폼 대본 & 프롬프트 자동화 스튜디오 | Micro SaaS</title>
+    <meta name="description" content="단 하나의 키워드로 완벽한 유튜브 숏폼 대본과 미드저니 이미지 프롬프트를 1분 만에 자동으로 생성하세요.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="background-elements">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <main class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="gradient-text">Creator Flow AI</h1>
+            <p class="subtitle">단어 하나로 펼쳐지는 나만의 숏폼 유니버스</p>
+        </header>
+
+        <!-- Main Card -->
+        <section class="glass-card main-generator">
+            <div class="input-group">
+                <label for="topic-input">어떤 주제로 숏폼을 만들고 싶으신가요?</label>
+                <div class="options-wrapper" style="display: flex; gap: 10px; margin-bottom: 10px; margin-top: 10px;">
+                    <select id="format-select" class="modern-select" style="padding: 0.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; outline: none; flex: 1;">
+                        <option value="short">쇼폼 (약 50초)</option>
+                        <option value="long">롱폼 (약 2~3분)</option>
+                    </select>
+                    <select id="orientation-select" class="modern-select" style="padding: 0.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; outline: none; flex: 1;">
+                        <option value="portrait">세로형 (9:16)</option>
+                        <option value="landscape">가로형 (16:9)</option>
+                    </select>
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="topic-input" placeholder="예: '퇴사 후 한달 살기', '초보자 필수 심리학 법칙'"
+                        autocomplete="off">
+                    <button id="generate-btn" class="primary-btn">
+                        <span class="btn-text">마법 시작하기</span>
+                        <div class="spinner hidden"></div>
+                    </button>
+                </div>
+                <p class="hint-text">키워드만 넣으면 대본, 해시태그, 이미지 프롬프트가 한 번에 쏟아집니다.</p>
+            </div>
+
+            <!-- Ads / Monetization Placeholder -->
+            <div class="ad-placeholder modern-ad">
+                <span>[ 광고 지면 구역 - 트래픽 수익 창출용 ]</span>
+            </div>
+
+            <!-- Upgrade Banner -->
+            <div class="upgrade-banner">
+                <span class="pro-badge">PRO</span>
+                <p>무제한 스크립트 작성 및 템플릿 잠금 해제!</p>
+                <a href="#" class="upgrade-link">월 $5 알아보기 &rarr;</a>
+            </div>
+        </section>
+
+        <!-- Result Section (Initially Hidden) -->
+        <section id="result-section" class="glass-card result-card hidden">
+            <div class="result-header">
+                <h2>생성 완료! 🎉</h2>
+                <div class="actions">
+                    <button class="icon-btn copy-all-btn" title="전체 복사">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="result-content">
+                <!-- Status Log for SSE -->
+                <div id="status-log" class="content-box"
+                    style="margin-bottom: 1rem; color: #a5b4fc; font-weight: bold; text-align: center;">
+                    서버 연결 대기 중...
+                </div>
+
+                <div class="tabs">
+                    <button class="tab active" data-tab="script">대본 & 프롬프트</button>
+                    <button class="tab" data-tab="video">완성 영상 🎬</button>
+                </div>
+
+                <div class="tab-pane active" id="tab-script">
+                    <div class="content-box">
+                        <h3>제목 (Title)</h3>
+                        <p id="out-title" class="generated-text placeholder-anim"></p>
+                    </div>
+                    <div class="content-box">
+                        <h3>숏폼 대본 (Script)</h3>
+                        <p id="out-script" class="generated-text placeholder-anim"></p>
+                    </div>
+                    <div class="content-box">
+                        <h3>해시태그 (Hashtags)</h3>
+                        <p id="out-hashtags" class="generated-text placeholder-anim"></p>
+                    </div>
+                </div>
+
+                <div class="tab-pane hidden" id="tab-video">
+                    <div class="content-box" style="text-align: center;">
+                        <h3>최종 자동 생성된 숏폼 영상</h3>
+                        <div id="video-container" style="margin-top: 1.5rem;">
+                            <!-- Video element will be injected here -->
+                            <p id="video-placeholder" class="placeholder-anim"
+                                style="min-height: 400px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgba(0,0,0,0.3);">
+                                영상을 렌더링 중입니다...</p>
+                        </div>
+                        <a id="download-btn" class="primary-btn hidden"
+                            style="margin-top: 1.5rem; display: inline-block; text-decoration: none;"
+                            download="shorts.mp4">영상 다운로드</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
