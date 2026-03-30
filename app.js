@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const topicInput     = document.getElementById('topic-input');
     const btnText        = generateBtn.querySelector('.btn-text');
     const spinner        = generateBtn.querySelector('.spinner');
+
+    // Bulk elements
+    const modeSelect      = document.getElementById('mode-select');
+    const singleWrapper   = document.getElementById('single-wrapper');
+    const bulkWrapper     = document.getElementById('bulk-wrapper');
+    const bulkTopicInput  = document.getElementById('bulk-topic-input');
+    const generateBulkBtn = document.getElementById('generate-bulk-btn');
+    const bulkBtnText     = generateBulkBtn ? generateBulkBtn.querySelector('.btn-text-bulk') : null;
+    const bulkSpinner     = document.getElementById('bulk-spinner');
+
     const resultSection  = document.getElementById('result-section');
     const outTitle       = document.getElementById('out-title');
     const outScript      = document.getElementById('out-script');
@@ -10,6 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusLog      = document.getElementById('status-log');
     const videoContainer = document.getElementById('video-container');
     const downloadBtn    = document.getElementById('download-btn');
+
+    if (modeSelect) {
+        modeSelect.addEventListener('change', () => {
+            if (modeSelect.value === 'bulk') {
+                singleWrapper.classList.add('hidden');
+                bulkWrapper.classList.remove('hidden');
+                bulkWrapper.style.display = 'flex';
+            } else {
+                bulkWrapper.classList.add('hidden');
+                singleWrapper.classList.remove('hidden');
+            }
+        });
+    }
 
     // Tabs
     const tabs     = document.querySelectorAll('.tab');
@@ -82,10 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ─── On pipeline complete ─────────────────────────────────────────────────
     function onPipelineComplete() {
-        statusLog.textContent = '✅ 영상 합성 완료! 결과를 확인하세요.';
+        statusLog.textContent = '✅ 완료! 모든 작업이 끝났습니다.';
         generateBtn.disabled  = false;
         btnText.textContent   = '다시 생성하기';
         spinner.classList.add('hidden');
+        if (generateBulkBtn) {
+            generateBulkBtn.disabled = false;
+            bulkBtnText.textContent = '대량 생산 공장 가동 🚀';
+            bulkSpinner.classList.add('hidden');
+        }
 
         // Switch to video tab
         tabs.forEach(t => t.classList.remove('active'));
@@ -107,24 +135,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ─── Generate button ──────────────────────────────────────────────────────
-    generateBtn.addEventListener('click', async () => {
-        const topic = topicInput.value.trim();
+    // ─── Generate action ──────────────────────────────────────────────────────
+    async function startGeneration(topics, isBulk, btn, btnTextEl, spinnerEl) {
         const formatSelect      = document.getElementById('format-select');
         const orientationSelect = document.getElementById('orientation-select');
         const format      = formatSelect      ? formatSelect.value      : 'short';
         const orientation = orientationSelect ? orientationSelect.value : 'portrait';
 
-        if (!topic) {
+        if (!topics || topics.length === 0) {
             alert('어떤 주제로 콘텐츠를 만들고 싶으신지 입력해주세요!');
-            topicInput.focus();
             return;
         }
 
         // UI – loading state
-        generateBtn.disabled = true;
-        btnText.textContent  = '생성 중...';
-        spinner.classList.remove('hidden');
+        btn.disabled = true;
+        btnTextEl.textContent  = '생성 중...';
+        spinnerEl.classList.remove('hidden');
 
         resultSection.classList.remove('hidden');
         resultSection.scrollIntoView({ behavior: 'smooth' });
@@ -135,13 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         videoContainer.innerHTML = '<p id="video-placeholder" class="placeholder-anim" style="min-height:400px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(0,0,0,0.3);">영상을 렌더링 중입니다...</p>';
         if (downloadBtn) downloadBtn.classList.add('hidden');
-        statusLog.textContent = '🚀 엔진 시동 중...';
+        
+        statusLog.textContent = isBulk ? `🚀 엔진 시동 중... [대량 생산 모드: 총 ${topics.length}개]` : `🚀 엔진 시동 중...`;
 
         try {
             const res = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, format, orientation })
+                body: JSON.stringify({ topics, format, orientation, isBulk })
             });
 
             if (!res.ok) {
@@ -157,11 +184,35 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(`생성 중 오류가 발생했습니다: ${error.message}`);
             console.error(error);
             statusLog.textContent = '❌ 생성 중 오류 발생';
-            generateBtn.disabled = false;
-            btnText.textContent  = '마법 시작하기';
-            spinner.classList.add('hidden');
+            btn.disabled = false;
+            btnTextEl.textContent  = isBulk ? '대량 생산 공장 가동 🚀' : '마법 시작하기';
+            spinnerEl.classList.add('hidden');
         }
+    }
+
+    generateBtn.addEventListener('click', () => {
+        const topic = topicInput.value.trim();
+        if (!topic) {
+            alert('단일 주제를 입력해주세요!');
+            topicInput.focus();
+            return;
+        }
+        startGeneration([topic], false, generateBtn, btnText, spinner);
     });
+
+    if (generateBulkBtn) {
+        generateBulkBtn.addEventListener('click', () => {
+            const rawText = bulkTopicInput.value.trim();
+            if (!rawText) {
+                alert('여러 주제를 쉼표나 줄바꿈으로 입력해주세요!');
+                bulkTopicInput.focus();
+                return;
+            }
+            // Parse by newline or comma
+            const topics = rawText.split(/[\n,]+/).map(t => t.trim()).filter(t => t.length > 0);
+            startGeneration(topics, true, generateBulkBtn, bulkBtnText, bulkSpinner);
+        });
+    }
 
     // ─── Copy button ──────────────────────────────────────────────────────────
     const copyAllBtn = document.querySelector('.copy-all-btn');

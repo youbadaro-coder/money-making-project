@@ -39,16 +39,32 @@
                         <option value="portrait">세로형 (9:16)</option>
                         <option value="landscape">가로형 (16:9)</option>
                     </select>
+                    <select id="mode-select" class="modern-select" style="padding: 0.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; outline: none; flex: 1; font-weight: bold; color: #a5b4fc;">
+                        <option value="single">단일 생성 모드</option>
+                        <option value="bulk">🔥 자동 대량 생산 모드</option>
+                    </select>
                 </div>
-                <div class="input-wrapper">
-                    <input type="text" id="topic-input" placeholder="예: '퇴사 후 한달 살기', '초보자 필수 심리학 법칙'"
-                        autocomplete="off">
+                
+                <!-- Single mode wrapper -->
+                <div class="input-wrapper" id="single-wrapper">
+                    <input type="text" id="topic-input" placeholder="예: '퇴사 후 한달 살기', '초보자 필수 심리학 법칙'" autocomplete="off">
                     <button id="generate-btn" class="primary-btn">
                         <span class="btn-text">마법 시작하기</span>
                         <div class="spinner hidden"></div>
                     </button>
                 </div>
-                <p class="hint-text">키워드만 넣으면 대본, 해시태그, 이미지 프롬프트가 한 번에 쏟아집니다.</p>
+                
+                <!-- Bulk mode wrapper -->
+                <div class="input-wrapper hidden" id="bulk-wrapper" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                    <textarea id="bulk-topic-input" rows="4" placeholder="예:&#10;퇴사 후 한달 살기&#10;초보자 필수 심리학 법칙&#10;다이어트 직장인 식단&#10;(줄바꿈이나 쉼표로 영상 여러 개의 주제를 입력하세요)"
+                        style="width:100%; padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.1); color:white; font-family:inherit; resize:vertical; outline:none; font-size:1rem; box-sizing:border-box;"></textarea>
+                    <button id="generate-bulk-btn" class="primary-btn" style="width: 100%; justify-content: center;">
+                        <span class="btn-text-bulk">대량 생산 공장 가동 🚀</span>
+                        <div class="spinner hidden" id="bulk-spinner"></div>
+                    </button>
+                </div>
+                
+                <p class="hint-text">하나, 혹은 여러 개의 키워드를 동시에 던져보세요. 나머지는 AI가 알아서 합니다.</p>
             </div>
 
             <!-- Ads / Monetization Placeholder -->

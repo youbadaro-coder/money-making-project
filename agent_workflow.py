@@ -3,14 +3,14 @@ agent_workflow.py
 =========================================
 주제(topic) 하나를 입력받으면 3단계 에이전트 파이프라인을 자동 실행합니다.
 
-[STEP 1] 대본 작성         → gemini-2.0-flash  (속도 우선, 한국어 특화)
+[STEP 1] 대본 작성         → gemini-2.5-flash  (속도 우선, 한국어 특화)
 [STEP 2] 이미지 프롬프트  → claude-3-5-sonnet  (창의성/퀄리티 우선)
-[STEP 3] 영상 소스 매칭   → gemini-2.0-flash  (키워드 매칭 속도 우선)
+[STEP 3] 영상 소스 매칭   → gemini-2.5-flash  (키워드 매칭 속도 우선)
 
 MODEL ROUTING RULES:
   - 감성/창의적 글쓰기  → claude-3-5-sonnet-20241022
   - 심층 분석/긴 추론   → claude-opus-4 (향후 지원 시)
-  - 빠른 정보 처리/JSON → gemini-2.0-flash
+  - 빠른 정보 처리/JSON → gemini-2.5-flash
 """
 
 import os
@@ -52,22 +52,22 @@ class ModelRouter:
 
     Routing Rules
     ─────────────
-    script      → gemini-2.0-flash    (빠른 한국어 대본 생성)
+    script      → gemini-2.5-flash    (빠른 한국어 대본 생성)
     creative    → claude-3-5-sonnet   (창의적 이미지 프롬프트 작성)
-    matching    → gemini-2.0-flash    (빠른 JSON 키워드 추출)
-    analysis    → gemini-2.0-flash    (claude-opus-4 미지원시 폴백)
+    matching    → gemini-2.5-flash    (빠른 JSON 키워드 추출)
+    analysis    → gemini-2.5-flash    (claude-opus-4 미지원시 폴백)
     """
 
     ROUTING_TABLE = {
-        "script":   ("gemini",    "gemini-2.0-flash"),
+        "script":   ("gemini",    "gemini-2.5-flash"),
         "creative": ("anthropic", "claude-3-5-sonnet-20241022"),
-        "matching": ("gemini",    "gemini-2.0-flash"),
-        "analysis": ("gemini",    "gemini-2.0-flash"),  # Opus 폴백
+        "matching": ("gemini",    "gemini-2.5-flash"),
+        "analysis": ("gemini",    "gemini-2.5-flash"),  # Opus 폴백
     }
 
     @classmethod
     def get(cls, task_type: str):
-        provider, model = cls.ROUTING_TABLE.get(task_type, ("gemini", "gemini-2.0-flash"))
+        provider, model = cls.ROUTING_TABLE.get(task_type, ("gemini", "gemini-2.5-flash"))
         log.info(f"[ROUTER] task_type={task_type:12s}  →  provider={provider:10s}  model={model}")
         return provider, model
 
@@ -96,10 +96,10 @@ def call_anthropic(model: str, prompt: str) -> str:
         return message.content[0].text
     except ImportError:
         log.warning("anthropic 패키지 없음 → Gemini 폴백")
-        return call_gemini("gemini-2.0-flash", prompt)
+        return call_gemini("gemini-2.5-flash", prompt)
     except Exception as e:
         log.error(f"Anthropic API 오류: {e} → Gemini 폴백")
-        return call_gemini("gemini-2.0-flash", prompt)
+        return call_gemini("gemini-2.5-flash", prompt)
 
 def call_model(task_type: str, prompt: str) -> str:
     """태스크 유형에 따라 적절한 모델을 자동 선택하여 호출합니다."""
@@ -110,10 +110,10 @@ def call_model(task_type: str, prompt: str) -> str:
         # Anthropic 키 없으면 Gemini 폴백
         if provider == "anthropic":
             log.warning("ANTHROPIC_API_KEY 없음 → Gemini 폴백")
-        return call_gemini("gemini-2.0-flash", prompt)
+        return call_gemini("gemini-2.5-flash", prompt)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 1: 대본 작성  (model: gemini-2.0-flash)
+# STEP 1: 대본 작성  (model: gemini-2.5-flash)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def step1_write_script(topic: str, format_type: str = "short") -> dict:
@@ -192,7 +192,7 @@ Each prompt must end with --ar {ar}
     return prompts
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3: 영상 소스 매칭  (model: gemini-2.0-flash)
+# STEP 3: 영상 소스 매칭  (model: gemini-2.5-flash)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def step3_match_video_sources(script_data: dict, image_prompts: list, orientation: str = "portrait") -> list:

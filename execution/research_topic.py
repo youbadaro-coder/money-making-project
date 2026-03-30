@@ -47,7 +47,7 @@ def research_topic(category=None, user_topic=None, user_style=None, format_type=
     duration_prompt = "approximately **50-55 seconds**." if format_type == 'short' else "approximately **2-3 minutes**."
     num_segments = "8-10 fast segments (to fill ~50s)." if format_type == 'short' else "15-20 segments (to fill 2-3 minutes)."
 
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     You are 'Annie', a provocative and genius Content Director.

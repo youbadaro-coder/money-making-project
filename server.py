@@ -77,33 +77,53 @@ def _run_script(script_path, args=None):
         return False
 
 
-def _pipeline_worker(topic, category, style, persona, format_type, orientation):
-    """Runs the full 3-step pipeline in a background thread."""
+def _pipeline_worker(topics, category, style, persona, format_type, orientation, is_bulk):
+    """Runs the full 3-step pipeline in a background thread for one or multiple topics."""
     try:
-        _job_push(f"🚀 {persona.upper()}: [{style}] 스타일로 시작합니다!")
+        total = len(topics)
+        for idx, topic in enumerate(topics):
+            topic = str(topic).strip()
+            if not topic:
+                continue
+                
+            prefix = f"[{idx+1}/{total}] " if total > 1 else ""
+            _job_push(f"🚀 {prefix}{persona.upper()}: '{topic}' 주제로 시작합니다!")
 
-        # STEP 1
-        _job_push("📝 [STEP 1] 대본 작성 중...")
-        ok = _run_script(os.path.join(BASE_DIR, "execution", "research_topic.py"),
-                         [category, topic, style, format_type, orientation])
-        if not ok:
-            _job_push("❌ 대본 작성 실패")
-            return
+            # STEP 1
+            _job_push(f"{prefix}📝 [STEP 1] 대본 작성 중...")
+            ok = _run_script(os.path.join(BASE_DIR, "execution", "research_topic.py"),
+                             [category, topic, style, format_type, orientation])
+            if not ok:
+                _job_push(f"{prefix}❌ 대본 작성 실패. 넘어갑니다.")
+                continue
 
-        # STEP 2
-        _job_push("🎬 [STEP 2] 영상 소스 수집 중...")
-        ok = _run_script(os.path.join(BASE_DIR, "execution", "fetch_materials.py"))
-        if not ok:
-            _job_push("⚠️ 일부 소스 수집 실패 (계속 진행)")
+            # STEP 2
+            _job_push(f"{prefix}🎬 [STEP 2] 영상 소스 수집 중...")
+            ok = _run_script(os.path.join(BASE_DIR, "execution", "fetch_materials.py"))
+            if not ok:
+                _job_push(f"{prefix}⚠️ 일부 소스 수집 실패 (계속 진행)")
 
-        # STEP 3
-        _job_push("✂️ [STEP 3] 나레이션 합성 & 영상 편집 중... (수분 소요)")
-        ok = _run_script(os.path.join(BASE_DIR, "execution", "edit_video.py"))
-        if not ok:
-            _job_push("❌ 영상 편집 실패")
-            return
+            # STEP 3
+            _job_push(f"{prefix}✂️ [STEP 3] 나레이션 합성 & 영상 편집 중... (수분 소요)")
+            ok = _run_script(os.path.join(BASE_DIR, "execution", "edit_video.py"))
+            if not ok:
+                _job_push(f"{prefix}❌ 영상 편집 실패. 넘어갑니다.")
+                continue
+            
+            # 덮어쓰기 방지 처리
+            if is_bulk:
+                import shutil
+                original_final = os.path.join(TMP_DIR, "final_video.mp4")
+                if os.path.exists(original_final):
+                    safe_topic = "".join(c for c in topic if c.isalnum() or c in " _-").strip().replace(' ', '_')
+                    bulk_out = os.path.join(TMP_DIR, f"final_video_{idx+1}_{safe_topic}.mp4")
+                    shutil.copy2(original_final, bulk_out)
+                    _job_push(f"{prefix}📁 영상 저장됨: {os.path.basename(bulk_out)}")
 
-        _job_push("✅ 완성! 영상 탭에서 결과를 확인하세요!")
+        if total > 1:
+            _job_push(f"✅ 완성! 총 {total}개의 숏폼 공장 가동을 성공적으로 마쳤습니다.")
+        else:
+            _job_push("✅ 완성! 영상 탭에서 결과를 확인하세요!")
 
     except Exception as e:
         import traceback
@@ -135,7 +155,14 @@ def serve_css():
 def generate():
     """Start a background pipeline and immediately return 200."""
     data        = request.json or {}
-    topic       = data.get("topic", "")
+    
+    topics      = data.get("topics", [])
+    if not topics: # backward compatibility
+        legacy_topic = data.get("topic")
+        if legacy_topic:
+            topics = [legacy_topic]
+            
+    is_bulk     = data.get("isBulk", False)
     category    = data.get("category", "Touching")
     style       = data.get("style", "Cinematic")
     persona     = data.get("persona", "kodari")
@@ -149,7 +176,7 @@ def generate():
     _job_reset()
     t = threading.Thread(
         target=_pipeline_worker,
-        args=(topic, category, style, persona, format_type, orientation),
+        args=(topics, category, style, persona, format_type, orientation, is_bulk),
         daemon=True,
     )
     t.start()
@@ -187,5 +214,5 @@ def get_video():
 
 
 if __name__ == "__main__":
-    print("Starting server at http://localhost:5001")
-    app.run(host="0.0.0.0", port=5001, debug=False, threaded=True)
+    print("Starting server at http://localhost:5002")
+    app.run(host="0.0.0.0", port=5002, debug=False, threaded=True)
