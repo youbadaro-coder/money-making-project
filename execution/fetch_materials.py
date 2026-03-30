@@ -70,6 +70,7 @@ def fetch_materials():
     with open(input_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
+    category = data.get('category', 'nature') # Use category as broad fallback
     segments = data.get('segments', [])
     bgm_style = data.get('bgm_style', "Cinematic")
     output_dir = os.path.join('.tmp', 'videos')

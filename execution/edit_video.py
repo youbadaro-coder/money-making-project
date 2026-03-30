@@ -3,10 +3,39 @@ import json
 import random
 import asyncio
 import textwrap
+import time
 import numpy as np
 import edge_tts
+from proglog import ProgressBarLogger
 from PIL import Image, ImageDraw, ImageFont
-from moviepy import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, CompositeAudioClip
+from moviepy import VideoFileClip, ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, CompositeAudioClip, AudioClip, concatenate_audioclips
+
+class CustomETA_Logger(ProgressBarLogger):
+    def __init__(self, init_state=None, bars=None, ignored_bars=None, logged_bars='all', min_time_interval=0.5, ignore_bars_under=0):
+        super().__init__(init_state, bars, ignored_bars, logged_bars, min_time_interval, ignore_bars_under)
+        self.start_times = {}
+
+    def bars_callback(self, bar, attr, value, old_value):
+        if bar not in self.start_times:
+            self.start_times[bar] = time.time()
+        
+        if bar != 't':
+            return
+            
+        total = self.bars[bar]['total']
+        if total == 0:
+            return
+            
+        current = value
+        percentage = int((current / total) * 100)
+        
+        elapsed = time.time() - self.start_times[bar]
+        if current > 0:
+            total_time_estimated = (elapsed / current) * total
+            eta_seconds = int(total_time_estimated - elapsed)
+            mins, secs = divmod(eta_seconds, 60)
+            print(f"PROGRESS: {percentage}% ETA: {mins:02d}분 {secs:02d}초", flush=True)
+
 
 # Korean font path
 FONT_PATH = "C:/Windows/Fonts/malgunbd.ttf" # Use bold if available
@@ -30,40 +59,55 @@ async def generate_narration(text, voice, output_path):
         print(f"Error generating narration: {e}", flush=True)
         return False
 
-def create_text_image(text, width=1080, height=1920, fontsize=70, color='yellow', stroke_color='black', stroke_width=5):
+def create_text_image(text, width=1080, height=1920, fontsize=50, color='black'):
     """
-    Creates a transparent PIL Image with wrapped and centered text.
-    Yellow text with black outline is standard for engaging shorts.
+    Creates a transparent PIL Image with wrapped and centered text on a gray background.
     """
     try:
         font = ImageFont.truetype(FONT_PATH, fontsize)
     except:
         font = ImageFont.load_default()
 
-    # Wrap text to fit roughly 80% of width
-    wrapper = textwrap.TextWrapper(width=15) # Approx characters per line for 1080px
-    lines = wrapper.wrap(text)
+    # Wrap text to max 2 lines (approx 25 chars for 1080px at 50px font)
+    wrapper = textwrap.TextWrapper(width=25) 
+    lines = wrapper.wrap(text)[:2] # Ensure max 2 lines
     
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Calculate total height of the text block to center it vertically
-    line_spacing = 15
-    # Estimate line height
+    # Calculate metrics
+    line_spacing = 10
     ascent, descent = font.getmetrics()
     line_h = ascent + descent + line_spacing
     total_h = len(lines) * line_h
 
-    current_y = (height - total_h) // 2
-
+    # Calculate widths for the background box
+    max_line_w = 0
+    line_widths = []
     for line in lines:
         left, top, right, bottom = font.getbbox(line)
-        line_w = right - left
+        w = right - left
+        line_widths.append(w)
+        if w > max_line_w:
+            max_line_w = w
+
+    # USER REQUEST: Position lower (around 85% down)
+    padding_x = 30
+    padding_y = 15
+    box_x1 = (width - max_line_w) // 2 - padding_x
+    box_y1 = int(height * 0.85) - padding_y
+    box_x2 = (width + max_line_w) // 2 + padding_x
+    box_y2 = box_y1 + total_h + padding_y * 1.5
+    
+    # Draw semi-transparent gray background box (lighter and more transparent)
+    draw.rounded_rectangle([box_x1, box_y1, box_x2, box_y2], radius=10, fill=(220, 220, 220, 80))
+
+    # Draw text
+    current_y = box_y1 + padding_y
+    for i, line in enumerate(lines):
+        line_w = line_widths[i]
         current_x = (width - line_w) // 2
-        
-        # Draw outline
-        draw.text((current_x, current_y), line, font=font, fill=color, 
-                  stroke_width=stroke_width, stroke_fill=stroke_color)
+        draw.text((current_x, current_y), line, font=font, fill=color)
         current_y += line_h
 
     return np.array(img)
@@ -103,6 +147,12 @@ async def process_segments(segments, voice_profile):
                     video_clip = video_clip.cropped(x1=0, y1=video_clip.h/2 - 960, width=1080, height=1920)
                 
                 # Loop or trim video to match audio duration
+                # FIXED: Actual padding to prevent audio being cut off and OSError duration mismatch
+                padding_duration = 0.5
+                silence = AudioClip(frame_function=lambda t: [0, 0], duration=padding_duration, fps=44100)
+                audio_clip = concatenate_audioclips([audio_clip, silence])
+                duration = audio_clip.duration
+
                 if video_clip.duration < duration:
                     # Repeat the clip to cover the duration
                     n_loops = int(np.ceil(duration / video_clip.duration))
@@ -182,7 +232,8 @@ async def edit_video():
     output_path = os.path.join(TEMP_DIR, 'final_video.mp4')
     
     print(f"Exporting final video: {output_path}", flush=True)
-    final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+    custom_logger = CustomETA_Logger(min_time_interval=0.5)
+    final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac", logger=custom_logger)
     print("--- Video Production Complete! ---", flush=True)
 
 if __name__ == "__main__":

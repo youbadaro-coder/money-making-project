@@ -1,85 +1,101 @@
-let selectedTone = 'Emotional';
-let selectedStyle = 'Cinematic';
 let currentPersona = 'kodari';
 
-const logContainer = document.getElementById('log-container');
-const outputVideo = document.getElementById('output-video');
-const videoPlaceholder = document.getElementById('video-placeholder');
-const statusIndicator = document.getElementById('status-indicator');
-const generateBtn = document.getElementById('generate-btn');
-
-const PERSONA_MSGS = {
-    annie: "자기야, 심리학적으로 사람들을 훅 끌어들일 수 있는 스크립트를 짜볼게. 기대해! 😘",
-    shhyong: "의장님, 비주얼은 제가 책임집니다. 최고의 시네마틱 앵글로 가져올게요. (윙크)",
-    kodari: "충성! 완벽한 타이밍에 자막과 음악을 입혀보겠습니다. 바로 가시죠!"
+const PERSONA_DATA = {
+    annie: {
+        name: "ANNIE TEAM LEADER",
+        img: "https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/annie_profile.png",
+        color: "text-red-400",
+        msg: "Darling! 사람들의 도파민을 자극할 치명적인 대본을 준비했어. 시작해볼까? 💋"
+    },
+    shhyong: {
+        name: "SONG TEAM LEADER",
+        img: "https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/song_profile.png",
+        color: "text-teal-400",
+        msg: "의장님, 비주얼의 품격을 한 단계 높여드릴게요. 고급스러운 영상미를 기대하세요. 👩‍💼"
+    },
+    kodari: {
+        name: "KODARI MANAGER",
+        img: "https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png",
+        color: "text-pink-400",
+        msg: "의장님! 공장 가동 준비 끝냈슈! 60초짜리 황금알, 바로 뽑아보겠슴다! 🐟"
+    }
 };
 
-function selectTone(btn, tone) {
-    selectedTone = tone;
-    document.querySelectorAll('#tone-picker button').forEach(b => {
-        b.className = "glass p-3 rounded-xl border-transparent";
-    });
-    btn.className = "glass p-3 rounded-xl border-teal-500 bg-teal-500/20 text-white font-medium";
-}
-
-function selectStyle(btn, style) {
-    selectedStyle = style;
-    document.querySelectorAll('#style-picker button').forEach(b => {
-        b.className = "glass p-3 rounded-xl border-transparent";
-    });
-    btn.className = "glass p-3 rounded-xl border-red-500 bg-red-500/20 text-white font-medium";
-}
+const dom = {
+    log: document.getElementById('log-container'),
+    genBtn: document.getElementById('generate-btn'),
+    btnText: document.getElementById('btn-text'),
+    video: document.getElementById('output-video'),
+    placeholder: document.getElementById('video-placeholder'),
+    status: document.getElementById('status-label'),
+    personaName: document.getElementById('active-persona-name'),
+    personaImg: document.getElementById('active-persona-img'),
+    topic: document.getElementById('topic-input'),
+    tone: document.getElementById('tone-select'),
+    style: document.getElementById('style-select')
+};
 
 function switchPersona(persona) {
     currentPersona = persona;
-    document.getElementById('persona-chat').textContent = `"${PERSONA_MSGS[persona]}"`;
+    const data = PERSONA_DATA[persona];
 
-    // Smooth transition for icons
-    ['annie', 'shhyong', 'kodari'].forEach(p => {
-        const el = document.getElementById(`${p}-icon`);
-        if (p === persona) {
-            el.classList.add('scale-125', 'border-opacity-100');
-            el.classList.remove('opacity-50');
-        } else {
-            el.classList.remove('scale-125', 'border-opacity-100');
-            el.classList.add('opacity-50');
-        }
+    // Update UI
+    dom.personaName.textContent = data.name;
+    dom.personaImg.src = data.img;
+    dom.personaName.className = `font-bold ${data.color}`;
+
+    // Highlight Button
+    document.querySelectorAll('[id^="btn-"]').forEach(btn => {
+        btn.classList.remove('persona-active');
+        btn.querySelector('div').classList.remove('border-pink-500');
+        btn.querySelector('div').classList.add('border-transparent', 'opacity-50');
+        btn.querySelector('span').classList.remove('text-pink-400');
+        btn.querySelector('span').classList.add('text-slate-400');
     });
+
+    const activeBtn = document.getElementById(`btn-${persona}`);
+    activeBtn.classList.add('persona-active');
+    activeBtn.querySelector('div').classList.remove('border-transparent', 'opacity-50');
+    activeBtn.querySelector('div').classList.add('border-pink-500');
+    activeBtn.querySelector('span').classList.remove('text-slate-400');
+    activeBtn.querySelector('span').classList.add('text-pink-400');
+
+    addLog(`System Operator switched to ${data.name}.`, 'system');
 }
 
 function addLog(msg, type = 'info') {
-    const div = document.createElement('div');
-    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    const time = new Date().toLocaleTimeString('ko-KR', { hour12: false });
 
-    if (msg.startsWith('[START]')) {
-        div.className = "text-yellow-400 font-bold mt-2";
-    } else if (msg.startsWith('[COMPLETE]')) {
-        div.className = "text-pink-400 font-bold mt-2";
-    } else if (msg.startsWith('[DONE]')) {
-        div.className = "text-slate-500 italic";
-    } else {
-        div.className = "pl-2";
-    }
+    let color = 'text-emerald-400';
+    let prefix = '>';
 
-    div.textContent = `[${timestamp}] ${msg}`;
-    logContainer.appendChild(div);
-    logContainer.scrollTop = logContainer.scrollHeight;
+    if (msg.includes('ERROR')) { color = 'text-red-400'; prefix = '!!'; }
+    if (msg.includes('COMPLETE')) { color = 'text-pink-400'; prefix = '✔'; }
+    if (type === 'system') { color = 'text-slate-500'; prefix = '#'; }
+
+    entry.className = `transition-all duration-300 ${color}`;
+    entry.innerHTML = `<span class="opacity-50">[${time}]</span> ${prefix} ${msg}`;
+
+    dom.log.appendChild(entry);
+    dom.log.scrollTop = dom.log.scrollHeight;
 }
 
 async function startGeneration() {
-    const topic = document.getElementById('topic-input').value;
+    const topic = dom.topic.value;
+    const category = dom.tone.value;
 
-    // UI Setup
-    generateBtn.disabled = true;
-    generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    generateBtn.innerHTML = `<span>⏳</span> 생성 중...`;
-    statusIndicator.textContent = "Processing pipeline...";
+    // Lock UI
+    dom.genBtn.disabled = true;
+    dom.btnText.textContent = "🚀 Production in Progress...";
+    dom.status.textContent = "Running Pipeline";
+    dom.status.className = dom.status.className.replace('text-pink-400', 'text-yellow-400');
 
-    outputVideo.classList.add('hidden');
-    videoPlaceholder.classList.remove('hidden');
+    dom.video.classList.add('hidden');
+    dom.placeholder.classList.remove('hidden');
 
-    logContainer.innerHTML = '';
-    addLog(`Starting production: ${selectedCategory} | ${topic || 'Auto-topic'}`);
+    addLog(`Starting production: [Category: ${category}] [Topic: ${topic || 'AI Auto'}]`);
+    addLog(`${PERSONA_DATA[currentPersona].msg}`);
 
     try {
         const response = await fetch('/api/generate', {
@@ -87,16 +103,11 @@ async function startGeneration() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 topic: topic,
-                category: selectedTone,
-                tone: selectedTone,
-                style: selectedStyle,
-                persona: currentPersona
+                category: category,
+                persona: currentPersona,
+                style: dom.style.value
             })
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP 오류! 상태 코드: ${response.status}`);
-        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -109,42 +120,70 @@ async function startGeneration() {
             const lines = chunk.split('\n');
 
             lines.forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('data: ')) {
-                    const msg = trimmed.replace('data: ', '');
+                if (line.startsWith('data: ')) {
+                    const msg = line.replace('data: ', '').trim();
                     if (msg) {
-                        addLog(msg);
-                        // Check for completion message from server
-                        if (msg.includes('완성되었습니다')) {
-                            finishGeneration();
+                        if (msg.startsWith('PROGRESS:')) {
+                            const parts = msg.match(/PROGRESS:\s+(\d+)%\s+ETA:\s+(.*)/);
+                            if (parts) {
+                                updateProgress(parts[1], parts[2]);
+                            }
+                        } else {
+                            addLog(msg);
+                            if (msg.includes('완성되었습니다')) finalize();
                         }
                     }
                 }
             });
         }
-    } catch (error) {
-        console.error('Generation error:', error);
-        addLog(`❌ 오류 발생: ${error.message}`, 'error');
-        generateBtn.disabled = false;
-        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        generateBtn.innerHTML = `✨ 영상 생성 시작`;
+    } catch (err) {
+        addLog(`ERROR: ${err.message}`);
+        resetUI();
     }
 }
 
-function finishGeneration() {
-    addLog("✨ 파이프라인이 성공적으로 완료되었습니다!");
-    statusIndicator.textContent = "작성 완료!";
+function finalize() {
+    addLog("COMPLETE: Viral video printed and verified.", 'complete');
+    dom.status.textContent = "Production Complete";
+    dom.status.className = dom.status.className.replace('text-yellow-400', 'text-pink-400');
 
-    // Refresh video
-    const videoUrl = `http://localhost:5000/video?t=${new Date().getTime()}`;
-    outputVideo.src = videoUrl;
-    outputVideo.classList.remove('hidden');
-    videoPlaceholder.classList.add('hidden');
-    outputVideo.play();
+    hideProgress();
 
-    generateBtn.disabled = false;
-    generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    generateBtn.innerHTML = `✨ 영상 생성 시작`;
+    const videoUrl = `/video?t=${new Date().getTime()}`;
+    dom.video.src = videoUrl;
+    dom.video.classList.remove('hidden');
+    dom.placeholder.classList.add('hidden');
 
-    alert("의장님! 영상 다 만들었어요! 제어판에서 확인해 보세요. ❤️");
+    resetUI();
 }
+
+function resetUI() {
+    dom.genBtn.disabled = false;
+    dom.btnText.textContent = "✨ 숏폼 생성 시작";
+}
+
+function updateProgress(pct, eta) {
+    const container = document.getElementById('progress-container');
+    const bar = document.getElementById('progress-bar');
+    const textInfo = document.getElementById('progress-text');
+    
+    if (container && container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        setTimeout(() => container.classList.remove('opacity-0'), 50);
+    }
+    
+    if (bar) bar.style.width = `${pct}%`;
+    if (textInfo) textInfo.textContent = `${pct}% | ETA: ${eta}`;
+}
+
+function hideProgress() {
+    const container = document.getElementById('progress-container');
+    if (container) {
+        container.classList.add('opacity-0');
+        setTimeout(() => container.classList.add('hidden'), 500);
+    }
+}
+
+// Initial Log
+addLog("Establishing connection to Antigravity Cloud...", 'system');
+addLog("Factory initialized. Welcome back, Chairman.", 'system');

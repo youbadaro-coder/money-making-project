@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from flask import Flask, request, jsonify, send_from_directory, Response
+
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -10,6 +11,10 @@ CORS(app)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BIN_PYTHON = os.path.join(BASE_DIR, ".bin", "python", "python.exe")
 TMP_DIR = os.path.join(BASE_DIR, ".tmp")
+
+# Force UTF-8 encoding for console logs
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 def run_script_yield(script_path, args=None):
     """Executes a script and yields its output line by line."""
@@ -52,22 +57,17 @@ def generate():
     data = request.json
     topic = data.get('topic', '')
     category = data.get('category', 'Touching')
-    
-    # In a real scenario, we might want to pass these as arguments or update a config
-    # For now, we'll let research_topic.py do its thing or we could modify it to accept args.
+    style = data.get('style', 'Cinematic')
+    persona = data.get('persona', 'kodari')
     
     def stream():
-        persona = data.get('persona', 'kodari')
-        tone = data.get('tone', 'Emotional')
-        style = data.get('style', 'Cinematic')
-        enhanced_topic = f"{topic} (Tone: {tone}, Style: {style})"
-
         yield "data: [SERVER] Connected\n\n"
-        yield f"data: 🚀 {persona.upper()}: 의장님, 요청하신 주제로 창작을 시작합니다!\n\n"
+        yield f"data: 🚀 {persona.upper()}: 의장님, 요청하신 주제로 창작을 시작합니다! [{style}]\n\n"
         
         # Step 1: Research
         yield f"data: 📝 {persona.upper()}: 의장님 스타일의 감각적인 기획안을 작성 중입니다...\n\n"
-        yield from run_script_yield(os.path.join(BASE_DIR, "execution", "research_topic.py"), [category, enhanced_topic])
+        # Passing: category, topic, style
+        yield from run_script_yield(os.path.join(BASE_DIR, "execution", "research_topic.py"), [category, topic, style])
         
         # Step 2: Fetch Materials
         yield f"data: 🎬 {persona.upper()}: 기획에 딱 맞는 고화질 영상들을 수집하고 있습니다...\n\n"
