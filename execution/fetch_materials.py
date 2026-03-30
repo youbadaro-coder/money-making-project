@@ -129,6 +129,10 @@ def fetch_materials():
                     dst_path = os.path.join(output_dir, f"segment_{i}.mp4")
                     shutil.copy2(src_path, dst_path)
                     collected_count += 1
+        
+        # Report progress per segment (30% to 55%)
+        prog = 30 + int((i / len(segments)) * (55 - 30))
+        print(f"[PROGRESS] {prog}%", flush=True)
 
     # BGM Sourcing (Placeholder for now, but we can try to download a generic one)
     # In a real scenario, we'd have a library of BGM files.

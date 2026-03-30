@@ -94,6 +94,7 @@ body {
     font-weight: 700;
     background: linear-gradient(to right, #ffffff, #a5b4fc);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
     letter-spacing: -1px;
@@ -372,6 +373,75 @@ body {
 @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+/* Animations for Status */
+@keyframes pulsingColor {
+    0% { color: #f2f2f5; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+    50% { color: #a5b4fc; text-shadow: 0 0 15px rgba(165, 180, 252, 0.6); }
+    100% { color: #f2f2f5; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+}
+
+.pulsing-text {
+    animation: pulsingColor 2s infinite ease-in-out;
+}
+
+/* Bulk Result Gallery */
+#bulk-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+#bulk-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#bulk-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+
+.bulk-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.2s;
+}
+
+.bulk-item:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(165, 180, 252, 0.3);
+}
+
+.bulk-item .topic-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+}
+
+.bulk-download-link {
+    font-size: 0.85rem;
+    color: #a5b4fc;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(165, 180, 252, 0.1);
+    transition: all 0.2s;
+}
+
+.bulk-download-link:hover {
+    background: #a5b4fc;
+    color: #000;
 }
 
 /* Responsive */

@@ -51,14 +51,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ─── Polling state ────────────────────────────────────────────────────────
+    // ─── Polling state (v3.1 Stable Timer) ────────────────────────────────────
     let _pollTimer = null;
+    let _secondsElapsed = 0;
+    let _timerInterval = null;
+    let _emaTotalTime = 0; // Exponential Moving Average for Total Estimated Time
+    const EMA_ALPHA = 0.2; // Smoothing factor (0 to 1). Lower is more stable.
+
+    function updateProgressBar(percentage) {
+        const bar = document.getElementById('progress-bar-fill');
+        if (bar) bar.style.width = `${percentage}%`;
+    }
+
+    function formatTime(sec) {
+        if (sec < 0 || isNaN(sec)) return "--:--";
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function startTimer(format) {
+        _secondsElapsed = 0;
+        // Initial conservative guess: 10 mins for long, 3.5 mins for short
+        _emaTotalTime = (format === 'long') ? 600 : 210; 
+        
+        const elapsedEl = document.getElementById('time-elapsed');
+        const totalEl = document.getElementById('time-total');
+        const remainingEl = document.getElementById('time-remaining');
+        const progressContainer = document.getElementById('progress-container');
+        
+        progressContainer.classList.remove('hidden');
+        if (elapsedEl) elapsedEl.textContent = `경과: 00:00`;
+        if (totalEl) totalEl.textContent = `총 예상 소요: ${formatTime(_emaTotalTime)}`;
+        if (remainingEl) remainingEl.textContent = `남은 시간: ${formatTime(_emaTotalTime)}`;
+        updateProgressBar(5);
+
+        if (_timerInterval) clearInterval(_timerInterval);
+        _timerInterval = setInterval(() => {
+            _secondsElapsed++;
+            if (elapsedEl) elapsedEl.textContent = `경과: ${formatTime(_secondsElapsed)}`;
+            
+            // Calc remaining based on stable EMA total
+            let remaining = Math.round(_emaTotalTime - _secondsElapsed);
+            if (remaining < 5 && _secondsElapsed < _emaTotalTime) remaining = 5; 
+            if (remainingEl) remainingEl.textContent = `남은 시간: ${formatTime(remaining)}`;
+        }, 1000);
+    }
 
     function stopPolling() {
-        if (_pollTimer) {
-            clearInterval(_pollTimer);
-            _pollTimer = null;
-        }
+        if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+        if (_timerInterval) { clearInterval(_timerInterval); _timerInterval = null; }
     }
 
     async function pollStatus() {
@@ -67,30 +109,84 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) return;
             const data = await res.json();
 
-            // Show new messages
-            if (data.messages && data.messages.length > 0) {
-                for (const msg of data.messages) {
-                    statusLog.textContent = msg;
-                    console.log('[server]', msg);
+            const totalEl = document.getElementById('time-total');
+            const remainingEl = document.getElementById('time-remaining');
 
-                    // When research is done, populate the script preview placeholders
-                    if (msg.includes('기획안') || msg.includes('STEP 1')) {
-                        [outTitle, outScript, outHashtags].forEach(el => el.classList.remove('placeholder-anim'));
-                        if (!outTitle.textContent)   outTitle.textContent   = `[자동 생성 중] ${topicInput.value}`;
-                        if (!outScript.textContent)  outScript.textContent  = '나레이션 합성 중… 잠시만 기다려 주세요.';
-                        if (!outHashtags.textContent) outHashtags.textContent = `#${topicInput.value.replace(/\s+/g, '')} #AI자동화 #숏폼팩토리`;
-                    }
+            // 1. Update Progress Bar
+            if (data.progress !== undefined) {
+                updateProgressBar(data.progress);
+                
+                // 2. Stable Time Estimation (EMA)
+                if (data.progress > 8 && data.progress < 100) {
+                    const rawTotal = (_secondsElapsed / data.progress) * 100;
+                    _emaTotalTime = (EMA_ALPHA * rawTotal) + (1 - EMA_ALPHA) * _emaTotalTime;
+                    if (totalEl) totalEl.textContent = `총 예상 소요: ${formatTime(Math.round(_emaTotalTime))}`;
                 }
             }
 
-            // Check completion
-            if (!data.running && data.done) {
-                stopPolling();
-                onPipelineComplete();
+            // 3. Show new messages & Handle Special Data
+            if (data.messages && data.messages.length > 0) {
+                for (const msg of data.messages) {
+                    // Check for Script Data Preview
+                    if (msg.startsWith('[SCRIPT_DATA]')) {
+                        try {
+                            const scriptData = JSON.parse(msg.replace('[SCRIPT_DATA]', '').trim());
+                            [outTitle, outScript, outHashtags].forEach(el => el.classList.remove('placeholder-anim'));
+                            outTitle.textContent = scriptData.title;
+                            outScript.textContent = scriptData.script;
+                            outHashtags.textContent = scriptData.hashtags;
+                            continue; // Don't show JSON in logs
+                        } catch(e) {}
+                    }
+
+                    // Check for Bulk File notification
+                    if (msg.includes('📁 영상 저장됨:')) {
+                        const filename = msg.split('📁 영상 저장됨:')[1].trim();
+                        addBulkItem(filename);
+                    }
+
+                    statusLog.textContent = msg;
+                    if (msg.includes('❌') || msg.includes('🚨')) {
+                        statusLog.style.color = '#f87171'; // Red for errors
+                    } else {
+                        statusLog.style.color = '#a5b4fc'; // Normal
+                    }
+                    console.log('[server]', msg);
+                }
             }
 
-            if (!data.running && !data.done) {
-                // backend hasn't started yet – keep polling
+            // 4. Check for Hard Errors
+            if (data.error) {
+                stopPolling();
+                statusLog.textContent = `🚨 오류 발생: ${data.error}`;
+                statusLog.style.color = '#ef4444';
+                const headerText = document.getElementById('result-header-text');
+                if (headerText) {
+                    headerText.textContent = '❌ 생성 중단됨';
+                    headerText.classList.remove('pulsing-text');
+                }
+                generateBtn.disabled = false;
+                if (generateBulkBtn) generateBulkBtn.disabled = false;
+                spinner.classList.add('hidden');
+                if (bulkSpinner) bulkSpinner.classList.add('hidden');
+                return;
+            }
+
+            // 5. Check completion
+            if (!data.running && data.done) {
+                updateProgressBar(100);
+                const headerText = document.getElementById('result-header-text');
+                if (headerText) {
+                    headerText.textContent = '생성 완료! 🎉';
+                    headerText.classList.remove('pulsing-text');
+                }
+                if (totalEl) totalEl.textContent = `총 소요 시간: ${formatTime(_secondsElapsed)}`;
+                if (remainingEl) remainingEl.textContent = `남은 시간: 00:00`;
+                
+                setTimeout(() => {
+                    stopPolling();
+                    onPipelineComplete();
+                }, 1000);
             }
 
         } catch (e) {
@@ -98,8 +194,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function startPolling() {
+    function addBulkItem(filename) {
+        const gallery = document.getElementById('bulk-result-gallery');
+        const bulkList = document.getElementById('bulk-list');
+        if (!gallery || !bulkList) return;
+
+        gallery.classList.remove('hidden');
+        
+        const item = document.createElement('div');
+        item.className = 'bulk-item';
+        
+        // Extract topic name from filename: final_video_1_topic.mp4
+        const parts = filename.split('_');
+        const topicDisplay = parts.slice(3).join('_').replace('.mp4', '') || filename;
+        
+        item.innerHTML = `
+            <span class="topic-name">${topicDisplay}</span>
+            <a href="/video/${filename}" class="bulk-download-link" download="${filename}">다운로드</a>
+        `;
+        bulkList.appendChild(item);
+    }
+
+    function startPolling(format) {
         stopPolling();
+        startTimer(format);
         _pollTimer = setInterval(pollStatus, 1500); // poll every 1.5 s
     }
 
@@ -135,25 +253,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ─── Generate action ──────────────────────────────────────────────────────
+    // ─── Generate action (v4.4 Optimized) ─────────────────────────────────────
     async function startGeneration(topics, isBulk, btn, btnTextEl, spinnerEl) {
         const formatSelect      = document.getElementById('format-select');
         const orientationSelect = document.getElementById('orientation-select');
+        const referenceInput    = document.getElementById('reference-input');
+        
         const format      = formatSelect      ? formatSelect.value      : 'short';
         const orientation = orientationSelect ? orientationSelect.value : 'portrait';
+        const references  = referenceInput    ? referenceInput.value.trim() : '';
 
         if (!topics || topics.length === 0) {
-            alert('어떤 주제로 콘텐츠를 만들고 싶으신지 입력해주세요!');
+            alert('주제를 입력해주세요!');
             return;
         }
 
-        // UI – loading state
+        // 1. UI Loading State
         btn.disabled = true;
-        btnTextEl.textContent  = '생성 중...';
+        btnTextEl.textContent  = '공장 가동 중...';
         spinnerEl.classList.remove('hidden');
 
+        // 2. Clear Results & Gallery
         resultSection.classList.remove('hidden');
         resultSection.scrollIntoView({ behavior: 'smooth' });
+        
+        const headerText = document.getElementById('result-header-text');
+        if (headerText) {
+            headerText.textContent = '생성 중... ⚙️';
+            headerText.classList.add('pulsing-text');
+        }
+        
+        const gallery = document.getElementById('bulk-result-gallery');
+        const bulkList = document.getElementById('bulk-list');
+        if (gallery) gallery.classList.add('hidden');
+        if (bulkList) bulkList.innerHTML = '';
 
         [outTitle, outScript, outHashtags].forEach(el => {
             el.textContent = '';
@@ -164,11 +297,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         statusLog.textContent = isBulk ? `🚀 엔진 시동 중... [대량 생산 모드: 총 ${topics.length}개]` : `🚀 엔진 시동 중...`;
 
+        // 3. Initiate API Call
         try {
             const res = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topics, format, orientation, isBulk })
+                body: JSON.stringify({ topics, format, orientation, isBulk, references })
             });
 
             if (!res.ok) {
@@ -177,13 +311,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Start polling for status updates
-            startPolling();
+            startPolling(format);
 
         } catch (error) {
             stopPolling();
-            alert(`생성 중 오류가 발생했습니다: ${error.message}`);
-            console.error(error);
-            statusLog.textContent = '❌ 생성 중 오류 발생';
+            alert(`생성 중 오류: ${error.message}`);
+            if (headerText) {
+                headerText.textContent = '❌ 생성 중 오류 발생';
+                headerText.classList.remove('pulsing-text');
+            }
             btn.disabled = false;
             btnTextEl.textContent  = isBulk ? '대량 생산 공장 가동 🚀' : '마법 시작하기';
             spinnerEl.classList.add('hidden');

@@ -30,86 +30,70 @@ async def generate_narration(text, voice, output_path):
         print(f"Error generating narration: {e}", flush=True)
         return False
 
-def create_text_image(text, width=1080, height=1920, fontsize=50, color='black'):
+def create_text_image(text, width=1080, height=1920, fontsize=65, color='white'):
     """
-    Creates a transparent PIL Image with wrapped and centered text on a gray background.
+    Creates a transparent PIL Image with wrapped and centered text (White with black stroke).
     """
     try:
         font = ImageFont.truetype(FONT_PATH, fontsize)
     except:
         font = ImageFont.load_default()
 
-    # Wrap text to max 2 lines (approx 25 chars for 1080px at 50px font)
-    wrapper = textwrap.TextWrapper(width=25) 
-    lines = wrapper.wrap(text)[:2] # Ensure max 2 lines
+    # Wrap text to max 2 lines
+    wrapper = textwrap.TextWrapper(width=20) 
+    lines = wrapper.wrap(text)[:2]
     
     img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     # Calculate metrics
-    line_spacing = 10
+    line_spacing = 15
     ascent, descent = font.getmetrics()
     line_h = ascent + descent + line_spacing
     total_h = len(lines) * line_h
 
-    # Calculate widths for the background box
-    max_line_w = 0
-    line_widths = []
+    # USER REQUEST: Position lower (around 82% down)
+    current_y = int(height * 0.82) - (total_h // 2)
+
+    # Draw text with STROKE (Black outline)
     for line in lines:
         left, top, right, bottom = font.getbbox(line)
-        w = right - left
-        line_widths.append(w)
-        if w > max_line_w:
-            max_line_w = w
-
-    # USER REQUEST: Position lower (around 85% down)
-    padding_x = 30
-    padding_y = 15
-    box_x1 = (width - max_line_w) // 2 - padding_x
-    box_y1 = int(height * 0.85) - padding_y
-    box_x2 = (width + max_line_w) // 2 + padding_x
-    box_y2 = box_y1 + total_h + padding_y * 1.5
-    
-    # Draw semi-transparent gray background box (lighter and more transparent)
-    draw.rounded_rectangle([box_x1, box_y1, box_x2, box_y2], radius=10, fill=(220, 220, 220, 80))
-
-    # Draw text
-    current_y = box_y1 + padding_y
-    for i, line in enumerate(lines):
-        line_w = line_widths[i]
+        line_w = right - left
         current_x = (width - line_w) // 2
-        draw.text((current_x, current_y), line, font=font, fill=color)
+        
+        # White text with Black border
+        draw.text((current_x, current_y), line, font=font, fill=color, 
+                  stroke_width=2, stroke_fill='black')
         current_y += line_h
 
     return np.array(img)
 
 async def process_segments(segments, voice_profile, orientation='portrait'):
-    """Processes each segment: generates audio and creates video-audio clips."""
-    final_segment_clips = []
+    """Processes segments IN PARALLEL: generates audio and creates video-audio clips."""
     
     target_w, target_h = (1080, 1920) if orientation == 'portrait' else (1920, 1080)
     
-    for i, seg in enumerate(segments):
+    async def process_single_segment(i, seg):
         text = seg.get('text', "")
         video_path = os.path.join(VIDEO_OUT_DIR, f"segment_{i}.mp4")
         audio_path = os.path.join(AUDIO_OUT_DIR, f"segment_{i}.mp3")
         
-        print(f"Processing segment {i}: {text[:20]}...", flush=True)
+        print(f"Processing segment {i} (Parallel): {text[:15]}...", flush=True)
         
-        # 1. Generate Narration
+        # 1. Generate Narration (TTS)
         if not await generate_narration(text, voice_profile, audio_path):
-            continue
+            return None
             
         # 2. Load Audio
         audio_clip = AudioFileClip(audio_path)
-        duration = audio_clip.duration
         
         # 3. Load Video and Sync
         if os.path.exists(video_path):
             try:
+                # Use threads for faster video loading
                 video_clip = VideoFileClip(video_path)
                 
-                # Resize and Crop to Target Dimension
+                # Resize and Crop
                 if video_clip.h != target_h:
                     video_clip = video_clip.resized(height=target_h)
                 
@@ -119,38 +103,51 @@ async def process_segments(segments, voice_profile, orientation='portrait'):
                     video_clip = video_clip.resized(width=target_w)
                     video_clip = video_clip.cropped(x1=0, y1=video_clip.h/2 - target_h/2, width=target_w, height=target_h)
                 
-                # Loop or trim video to match audio duration
-                # FIXED: Actual padding to prevent audio being cut off and OSError duration mismatch
-                padding_duration = 0.5
+                # Sync logic with 0.8s padding per segment for much smoother narration flow
+                padding_duration = 0.8
                 silence = AudioClip(frame_function=lambda t: [0, 0], duration=padding_duration, fps=44100)
                 audio_clip = concatenate_audioclips([audio_clip, silence])
                 duration = audio_clip.duration
 
                 if video_clip.duration < duration:
-                    # Repeat the clip to cover the duration
                     n_loops = int(np.ceil(duration / video_clip.duration))
                     video_clip = concatenate_videoclips([video_clip] * n_loops)
-                    video_clip = video_clip.subclipped(0, duration)
-                else:
-                    video_clip = video_clip.subclipped(0, duration)
                 
-                # Attach Audio
-                video_clip = video_clip.with_audio(audio_clip)
+                video_clip = video_clip.subclipped(0, duration).with_audio(audio_clip)
                 
                 # 4. Add Caption Overlay
                 txt_img = create_text_image(text, width=target_w, height=target_h)
                 txt_clip = ImageClip(txt_img).with_duration(duration).with_position('center')
                 
                 composite_seg = CompositeVideoClip([video_clip, txt_clip])
-                final_segment_clips.append(composite_seg)
                 
+                return composite_seg
             except Exception as e:
-                print(f"Error processing video for segment {i}: {e}")
-                continue
-        else:
-            print(f"Video for segment {i} not found. Skipping.")
+                print(f"Error processing segment {i}: {e}")
+                return None
+        return None
 
-    return final_segment_clips
+    # Run all segments in parallel!
+    tasks = [process_single_segment(i, seg) for i, seg in enumerate(segments)]
+    results = await asyncio.gather(*tasks)
+    
+    # Filter out failed segments
+    return [r for r in results if r is not None]
+
+def get_best_codec():
+    """Detects if NVIDIA NVENC is available for hardware acceleration."""
+    import subprocess
+    target = "h264_nvenc"
+    try:
+        cmd = ["ffmpeg", "-encoders"]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        if target in result.stdout:
+            print(f"--- GPU Acceleration Enabled: {target} ---", flush=True)
+            return target
+    except:
+        pass
+    print("--- GPU Acceleration Not Found. Falling back to CPU (libx264) ---", flush=True)
+    return "libx264"
 
 async def edit_video():
     input_path = os.path.join(TEMP_DIR, 'topic_data.json')
@@ -163,14 +160,14 @@ async def edit_video():
 
     segments = data.get('segments', [])
     voice_profile = data.get('voice_profile', "ko-KR-SunHiNeural")
-    format_type = data.get('format', 'short')
+    format_type = str(data.get('format', 'short')).lower()
     orientation = data.get('orientation', 'portrait')
     
     if not segments:
         print("No segments found in data.")
         return
 
-    print("--- Starting Superior Rendering Engine ---", flush=True)
+    print(f"--- Starting Final Rendering Engine (Format: {format_type}) ---", flush=True)
     
     # Process Segments
     segment_clips = await process_segments(segments, voice_profile, orientation)
@@ -189,27 +186,51 @@ async def edit_video():
             bgm_clip = AudioFileClip(bgm_path)
             # Loop BGM to match video duration
             bgm_clip = bgm_clip.loop(duration=final_video.duration)
-            # Lower volume for BGM (Mastering / Ducking)
             bgm_clip = bgm_clip.volumex(0.15) 
             
-            # Mix with narration (which is already in final_video.audio)
+            # Mix with narration
             final_audio = CompositeAudioClip([final_video.audio, bgm_clip])
             final_video = final_video.with_audio(final_audio)
             print("Successfully mixed background music.", flush=True)
         except Exception as e:
             print(f"Error adding BGM: {e}", flush=True)
+
+    # FINAL AUDIO PROTECTION: Add 1.5s silence at the very end to prevent cutoff
+    final_silence = AudioClip(frame_function=lambda t: [0, 0], duration=1.5, fps=44100)
+    final_audio_padded = concatenate_audioclips([final_video.audio, final_silence])
     
-    # Limit duration based on format
-    max_duration = 59 if format_type == 'short' else 180
+    # Ensure video duration matches audio exactly
+    final_video = final_video.with_duration(final_audio_padded.duration).with_audio(final_audio_padded)
+    
+    # Limit duration (Long-form up to 300s)
+    max_duration = 60.0 if format_type == 'short' else 310.0
     if final_video.duration > max_duration:
-        final_video = final_video.subclipped(0, max_duration)
+        final_video = final_video.with_duration(max_duration).subclipped(0, max_duration)
 
     # Output path
     output_path = os.path.join(TEMP_DIR, 'final_video.mp4')
     
-    print(f"Exporting final video: {output_path}", flush=True)
-    final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+    # GPU Acceleration Setup
+    best_codec = get_best_codec()
+    ffmpeg_params = ["-hwaccel", "cuda", "-hwaccel_output_format", "cuda"] if best_codec == "h264_nvenc" else []
+    if best_codec == "h264_nvenc":
+        ffmpeg_params.extend(["-preset", "p4", "-tune", "hq"])
+
+    print(f"Exporting final video (Threads: 8, Codec: {best_codec})", flush=True)
+    print(f"[PROGRESS] 95%", flush=True)
+    
+    final_video.write_videofile(
+        output_path, 
+        fps=24, 
+        codec=best_codec, 
+        audio_codec="aac",
+        ffmpeg_params=ffmpeg_params,
+        threads=8,
+        logger=None # Reduce output noise
+    )
+    
     print("--- Video Production Complete! ---", flush=True)
+    print(f"[PROGRESS] 100%", flush=True)
 
 if __name__ == "__main__":
     asyncio.run(edit_video())

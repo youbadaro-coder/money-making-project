@@ -32,16 +32,35 @@ _job_status = {
     "running":   False,
     "done":      False,
     "error":     None,
+    "progress":  0,     # 0-100 percentage
     "messages":  [],   # list of str, newest at end
     "cursor":    0,    # next unread index (used by polling)
 }
 
 def _job_reset():
     with _job_lock:
-        _job_status.update(running=True, done=False, error=None, messages=[], cursor=0)
+        _job_status.update(running=True, done=False, error=None, messages=[], cursor=0, progress=0)
+    
+    # 🚨 CRITICAL: Delete old results to prevent duplication
+    try:
+        for f in ["topic_data.json", "final_video.mp4"]:
+            p = os.path.join(TMP_DIR, f)
+            if os.path.exists(p):
+                os.remove(p)
+                print(f"--- Deleted stale file: {f} ---")
+    except Exception as e:
+        print(f"Error clearing stale data: {e}")
 
 def _job_push(msg: str):
     with _job_lock:
+        # Check if message is a progress update: [PROGRESS] X%
+        if "[PROGRESS]" in msg:
+            try:
+                prog_str = msg.split("[PROGRESS]")[1].split("%")[0].strip()
+                _job_status["progress"] = int(prog_str)
+                return # Don't push progress messages to the log array
+            except:
+                pass
         _job_status["messages"].append(msg)
 
 def _run_script(script_path, args=None):
@@ -77,53 +96,117 @@ def _run_script(script_path, args=None):
         return False
 
 
-def _pipeline_worker(topics, category, style, persona, format_type, orientation, is_bulk):
-    """Runs the full 3-step pipeline in a background thread for one or multiple topics."""
+def _pipeline_worker(topics, category, style, persona, format_type, orientation, is_bulk, references):
+    """Runs the full 3-step pipeline for one or multiple topics with aggregate progress."""
+    print(f"--- Pipeline Starting with Topics: {topics} (Format: {format_type}) ---", flush=True)
+    if references:
+        print(f"--- Style References Provided: {references[:100]}... ---", flush=True)
     try:
-        total = len(topics)
+        total_topics = len(topics)
         for idx, topic in enumerate(topics):
+            current_topic_num = idx + 1
             topic = str(topic).strip()
             if not topic:
                 continue
+            
+            # 🚨 CRITICAL: Remove specific data for this run to avoid duplication
+            try:
+                for f in ["topic_data.json", "final_video.mp4"]:
+                    p = os.path.join(TMP_DIR, f)
+                    if os.path.exists(p):
+                        os.remove(p)
+            except:
+                pass
                 
-            prefix = f"[{idx+1}/{total}] " if total > 1 else ""
+            prefix = f"[{current_topic_num}/{total_topics}] " if total_topics > 1 else ""
             _job_push(f"🚀 {prefix}{persona.upper()}: '{topic}' 주제로 시작합니다!")
+
+            # 헬퍼 함수: 하위 작업의 %를 전체 %로 변환
+            def _push_agg_progress(sub_prog):
+                agg = ((current_topic_num - 1) / total_topics) * 100 + (sub_prog / total_topics)
+                _job_status["progress"] = int(agg)
 
             # STEP 1
             _job_push(f"{prefix}📝 [STEP 1] 대본 작성 중...")
+            _push_agg_progress(10)
             ok = _run_script(os.path.join(BASE_DIR, "execution", "research_topic.py"),
-                             [category, topic, style, format_type, orientation])
+                             [category, topic, style, format_type, orientation, references])
             if not ok:
-                _job_push(f"{prefix}❌ 대본 작성 실패. 넘어갑니다.")
-                continue
+                err_msg = f"{prefix}❌ [STEP 1] 대본 작성 실패. 중단합니다."
+                _job_push(err_msg)
+                with _job_lock:
+                    _job_status["error"] = err_msg
+                break
+
+            # Push script data to UI immediately
+            try:
+                data_path = os.path.join(TMP_DIR, "topic_data.json")
+                if os.path.exists(data_path):
+                    with open(data_path, 'r', encoding='utf-8') as f:
+                        script_content = json.load(f)
+                        display_data = {
+                            "title": script_content.get("title", ""),
+                            "script": script_content.get("script", ""),
+                            "hashtags": script_content.get("hashtags", "")
+                        }
+                        _job_push(f"[SCRIPT_DATA] {json.dumps(display_data)}")
+            except Exception as e:
+                print(f"Error pushing script data: {e}")
 
             # STEP 2
             _job_push(f"{prefix}🎬 [STEP 2] 영상 소스 수집 중...")
+            _push_agg_progress(30)
+            # CRITICAL: ensure Step 2 only runs if Step 1 succeeded (topic_data exists)
+            if not os.path.exists(os.path.join(TMP_DIR, "topic_data.json")):
+                err_msg = f"{prefix}❌ [STEP 2] 주제 데이터가 생성되지 않았습니다."
+                _job_push(err_msg)
+                with _job_lock:
+                    _job_status["error"] = err_msg
+                break
+
             ok = _run_script(os.path.join(BASE_DIR, "execution", "fetch_materials.py"))
             if not ok:
                 _job_push(f"{prefix}⚠️ 일부 소스 수집 실패 (계속 진행)")
 
             # STEP 3
             _job_push(f"{prefix}✂️ [STEP 3] 나레이션 합성 & 영상 편집 중... (수분 소요)")
+            _push_agg_progress(60)
             ok = _run_script(os.path.join(BASE_DIR, "execution", "edit_video.py"))
             if not ok:
-                _job_push(f"{prefix}❌ 영상 편집 실패. 넘어갑니다.")
-                continue
+                err_msg = f"{prefix}❌ [STEP 3] 영상 편집 실패. 중단합니다."
+                _job_push(err_msg)
+                with _job_lock:
+                    _job_status["error"] = err_msg
+                break
+
+            _push_agg_progress(100)
             
-            # 덮어쓰기 방지 처리
+            # FINAL TRUTH CHECK: Verify if the file actually exists
+            final_path = os.path.join(TMP_DIR, "final_video.mp4")
+            if not os.path.exists(final_path):
+                err_msg = f"{prefix}❌ 영상 합성이 완료되었으나 파일이 존재하지 않습니다."
+                _job_push(err_msg)
+                with _job_lock:
+                    _job_status["error"] = err_msg
+                break
+
+            # 덮어쓰기 방지 처리 (Bulk Mode)
             if is_bulk:
                 import shutil
                 original_final = os.path.join(TMP_DIR, "final_video.mp4")
                 if os.path.exists(original_final):
+                    # Sanitize topic for filename
                     safe_topic = "".join(c for c in topic if c.isalnum() or c in " _-").strip().replace(' ', '_')
-                    bulk_out = os.path.join(TMP_DIR, f"final_video_{idx+1}_{safe_topic}.mp4")
+                    bulk_filename = f"final_video_{current_topic_num}_{safe_topic}.mp4"
+                    bulk_out = os.path.join(TMP_DIR, bulk_filename)
                     shutil.copy2(original_final, bulk_out)
-                    _job_push(f"{prefix}📁 영상 저장됨: {os.path.basename(bulk_out)}")
+                    _job_push(f"{prefix}📁 영상 저장됨: {bulk_filename}")
 
-        if total > 1:
-            _job_push(f"✅ 완성! 총 {total}개의 숏폼 공장 가동을 성공적으로 마쳤습니다.")
-        else:
-            _job_push("✅ 완성! 영상 탭에서 결과를 확인하세요!")
+        if not _job_status["error"]:
+            if total_topics > 1:
+                _job_push(f"✅ 완성! 총 {total_topics}개의 숏폼 공장 가동을 성공적으로 마쳤습니다.")
+            else:
+                _job_push("✅ 완성! 영상 탭에서 결과를 확인하세요!")
 
     except Exception as e:
         import traceback
@@ -168,6 +251,7 @@ def generate():
     persona     = data.get("persona", "kodari")
     format_type = data.get("format", "short")
     orientation = data.get("orientation", "portrait")
+    references  = data.get("references", "")
 
     with _job_lock:
         if _job_status["running"]:
@@ -176,7 +260,7 @@ def generate():
     _job_reset()
     t = threading.Thread(
         target=_pipeline_worker,
-        args=(topics, category, style, persona, format_type, orientation, is_bulk),
+        args=(topics, category, style, persona, format_type, orientation, is_bulk, references),
         daemon=True,
     )
     t.start()
@@ -204,6 +288,7 @@ def status():
         "running":  running,
         "done":     done,
         "error":    error,
+        "progress": _job_status["progress"],
         "messages": new_msgs,
     })
 
@@ -211,6 +296,10 @@ def status():
 @app.route("/video")
 def get_video():
     return send_from_directory(TMP_DIR, "final_video.mp4")
+
+@app.route("/video/<path:filename>")
+def get_bulk_video(filename):
+    return send_from_directory(TMP_DIR, filename)
 
 
 if __name__ == "__main__":
